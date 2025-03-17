@@ -445,8 +445,14 @@
     }
   },
   "libraries": {
-    "pinned_footprint_libs": [],
-    "pinned_symbol_libs": []
+    "pinned_footprint_libs": [
+      "Rocketry_FC",
+      "TCLib"
+    ],
+    "pinned_symbol_libs": [
+      "TCLib",
+      "Rocketry_FC"
+    ]
   },
   "meta": {
     "filename": "SRAD_computer.kicad_pro",
