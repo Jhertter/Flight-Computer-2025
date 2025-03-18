@@ -1,0 +1,4 @@
+(version 1)
+(rule "Same Component Pad Clearance"
+	(condition "A.Component_Class == B.Component_Class")
+	(constraint clearance (min 0mm)))
