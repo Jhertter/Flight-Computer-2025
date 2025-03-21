@@ -11171,7 +11171,7 @@
 		(at 351.79 135.89 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005ef4c292")
@@ -11193,7 +11193,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_2.7mm_M2.5"
+		(property "Footprint" "MountingHole:MountingHole_3.5mm"
 			(at 351.79 135.89 0)
 			(effects
 				(font
@@ -11233,7 +11233,7 @@
 		(at 351.79 140.97 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005ef4cf1f")
@@ -11255,7 +11255,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_2.7mm_M2.5"
+		(property "Footprint" "MountingHole:MountingHole_3.5mm"
 			(at 351.79 140.97 0)
 			(effects
 				(font
@@ -11295,7 +11295,7 @@
 		(at 351.79 146.05 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005ef4d323")
@@ -11317,7 +11317,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_2.7mm_M2.5"
+		(property "Footprint" "MountingHole:MountingHole_3.5mm"
 			(at 351.79 146.05 0)
 			(effects
 				(font
@@ -11357,7 +11357,7 @@
 		(at 351.79 151.13 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005ef4d57b")
@@ -11379,7 +11379,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_2.7mm_M2.5"
+		(property "Footprint" "MountingHole:MountingHole_3.5mm"
 			(at 351.79 151.13 0)
 			(effects
 				(font
@@ -12879,7 +12879,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TCLib:C_5mm"
+		(property "Footprint" "TCLib:C_0805"
 			(at 81.28 248.158 0)
 			(effects
 				(font
@@ -12897,7 +12897,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" ""
 			(at 80.518 243.586 0)
 			(effects
 				(font
@@ -14139,7 +14139,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TCLib:C_5mm"
+		(property "Footprint" "TCLib:C_0805"
 			(at 93.98 237.998 0)
 			(effects
 				(font
@@ -14157,7 +14157,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" ""
 			(at 93.218 233.426 0)
 			(effects
 				(font
@@ -14544,7 +14544,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TCLib:C_5mm"
+		(property "Footprint" "TCLib:C_0805"
 			(at 77.47 224.028 0)
 			(effects
 				(font
@@ -14562,7 +14562,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" ""
 			(at 76.708 219.456 0)
 			(effects
 				(font
@@ -15085,7 +15085,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TCLib:C_5mm"
+		(property "Footprint" "TCLib:C_0805"
 			(at 92.71 161.798 0)
 			(effects
 				(font
@@ -15103,7 +15103,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" ""
 			(at 91.948 157.226 0)
 			(effects
 				(font

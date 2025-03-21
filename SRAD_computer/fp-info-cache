@@ -1,4 +1,4 @@
-24810489585707364
+24812627735969287
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -88906,20 +88906,6 @@ WiFi IEEE802.11 b/g/n
 0
 44
 44
-RP2040_minimal_r2
-RP2040-QFN-56
-QFN, 56 Pin (http://www.cypress.com/file/416486/download#page=40), generated with kicad-footprint-generator ipc_dfn_qfn_generator.py
-QFN DFN_QFN
-0
-70
-57
-RP2040_minimal_r2
-USB_Micro-B_Amphenol_10103594-0001LF_Horizontal_modified
-Micro USB Type B 10103594-0001LF, http://cdn.amphenol-icc.com/media/wysiwyg/files/drawing/10103594.pdf
-USB USB_B USB_micro USB_OTG
-0
-17
-6
 Relay_SMD
 Relay_2P2T_10x6mm_TE_IMxxG
 Signal Relay, 10x6mm, 2 Form C, Gull Wings, https://www.te.com/commerce/DocumentDelivery/DDEController?Action=showdoc&DocId=Data+Sheet%7F108-98001%7FZ.1%7Fpdf%7FEnglish%7FENG_DS_108-98001_Z.1.pdf
@@ -91048,6 +91034,41 @@ Resistor Radial_Power series Radial pin pitch 7.37mm 10W length 16.1mm width 9mm
 0
 2
 2
+Rocketry_FC
+BME280
+2.5 mm x 2.5 mm x 0.93 mm metal lid LGA
+
+0
+8
+8
+Rocketry_FC
+MPU-9250
+
+
+0
+25
+25
+Rocketry_FC
+RP2040
+QFN, 56 Pin (http://www.cypress.com/file/416486/download#page=40), generated with kicad-footprint-generator ipc_dfn_qfn_generator.py
+QFN DFN_QFN
+0
+70
+57
+Rocketry_FC
+SAM-M8Q-0-10
+
+
+0
+20
+20
+Rocketry_FC
+USB_Micro-B_Amphenol_10103594-0001LF_Horizontal_modified
+Micro USB Type B 10103594-0001LF, http://cdn.amphenol-icc.com/media/wysiwyg/files/drawing/10103594.pdf
+USB USB_B USB_micro USB_OTG
+0
+17
+6
 Rotary_Encoder
 RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm
 Alps rotary encoder, EC12E... with switch, vertical shaft, http://www.alps.com/prod/info/E/HTML/Encoder/Incremental/EC11/EC11E15204A3.html
@@ -93009,13 +93030,6 @@ Diode DO-41_SOD81 series Axial Horizontal pin pitch 10.16mm  length 5.2mm diamet
 2
 2
 TCLib
-FPGA_UPduino_ICE40UP5K
-
-
-0
-48
-48
-TCLib
 ITBA
 Open Source Hardware Symbol
 Logo Symbol OSHW
@@ -93107,13 +93121,6 @@ resistor handsolder
 2
 2
 TCLib
-SW_Tactile
-
-
-0
-4
-4
-TCLib
 TO-18-3
 TO-18-3
 TO-18-3
@@ -93148,20 +93155,6 @@ TO-220-3 Vertical RM 2.54mm
 0
 3
 3
-TCLib
-Toroide
-
-
-0
-2
-2
-TCLib
-UpDuino 3.1V
-
-
-0
-48
-46
 TerminalBlock
 TerminalBlock_Altech_AK300-2_P5.00mm
 Altech AK300 terminal block, pitch 5.0mm, 45 degree angled, see http://www.mouser.com/ds/2/16/PCBMETRC-24178.pdf
@@ -99021,13 +99014,6 @@ igbt diode module
 0
 25
 25
-UJC-H-G-SMT-P6-TR
-SAMESKY_UJC-H-G-SMT-P6-TR
-
-
-0
-10
-10
 Valve
 Valve_ECC-83-1
 Valve ECC-83-1 round pins
