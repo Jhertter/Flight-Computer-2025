@@ -48,8 +48,8 @@ Investigar un poco sobre la placa para BMS
 - asegurarse que los caps de desacople esten antes de las entradas
 - no exponer el BME280 a mucha luz (es fotosensible)
 - al gps va a haber que aisalrlo en la placa, dejarlo en una esquina separado y tiene que estar en un plano de GND de 50x50 mm 
-- ver SAM-M8Q Hardware Integration Manual, UBX-16018358 pag 12
-- usar conexión troncal para VCC y GND, dejar al final el gps
+- ~~ver SAM-M8Q Hardware Integration Manual, UBX-16018358 pag 12~~
+- ~~usar conexión troncal para VCC y GND, dejar al final el gps~~
 - va a haber que hacerle un case con tapa a la placa para evitar corrientes de aire
 - usar pulsera antiestática
 - a nivel bahía analizar la posición para maximizar el diagrama de radiación
