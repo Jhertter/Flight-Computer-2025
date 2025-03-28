@@ -1,4 +1,4 @@
-24774365978030254
+24772622847452582
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -99630,13 +99630,6 @@ QFN DFN_QFN
 0
 70
 57
-my_lib
-SAMESKY_UJ20-C-H-G-SMT-1-P16-TR
-
-
-0
-16
-16
 my_lib
 USB-C-samesky
 
