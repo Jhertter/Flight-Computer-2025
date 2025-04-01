@@ -1,4 +1,4 @@
-24816114642524291
+24777865993415420
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -13306,90 +13306,6 @@ connector Hirose DF63 vertical
 0
 5
 5
-Connector_Hirose_FX8
-Hirose_FX8-60P-SV_2x30_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Header, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking header
-0
-60
-60
-Connector_Hirose_FX8
-Hirose_FX8-60S-SV_2x30_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Receptacle, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking receptacle
-0
-60
-60
-Connector_Hirose_FX8
-Hirose_FX8-80P-SV_2x40_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Header, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking header
-0
-80
-80
-Connector_Hirose_FX8
-Hirose_FX8-80S-SV_2x40_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Receptacle, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking receptacle
-0
-80
-80
-Connector_Hirose_FX8
-Hirose_FX8-90P-SV_2x45_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Header, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking header
-0
-90
-90
-Connector_Hirose_FX8
-Hirose_FX8-90S-SV_2x45_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Receptacle, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking receptacle
-0
-90
-90
-Connector_Hirose_FX8
-Hirose_FX8-100P-SV_2x50_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Header, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking header
-0
-100
-100
-Connector_Hirose_FX8
-Hirose_FX8-100S-SV_2x50_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Receptacle, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking receptacle
-0
-100
-100
-Connector_Hirose_FX8
-Hirose_FX8-120P-SV_2x60_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Header, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking header
-0
-120
-120
-Connector_Hirose_FX8
-Hirose_FX8-120S-SV_2x60_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Receptacle, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking receptacle
-0
-120
-120
-Connector_Hirose_FX8
-Hirose_FX8-140P-SV_2x70_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Header, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking header
-0
-140
-140
-Connector_Hirose_FX8
-Hirose_FX8-140S-SV_2x70_P0.6mm
-0.6mm Pitch, Stacking Height 3mm to 16mm, Receptacle, vertical (source: https://www.hirose.com/de/product/document?clcode=&productname=&series=FX8&documenttype=Catalog&lang=en&documentid=D31612_en)
-conn hirose board to board stacking receptacle
-0
-140
-140
 Connector_IDC
 IDC-Header_2x03_P2.54mm_Horizontal
 Through hole IDC box header, 2x03, 2.54mm pitch, DIN 41651 / IEC 60603-13, double rows, https://docs.google.com/spreadsheets/d/16SsEcesNF15N3Lb4niX7dcUr-NY5_MFPQhobNuNppn4/edit#gid=0
@@ -14972,146 +14888,6 @@ SIM Card with Detect Switch
 0
 18
 9
-Connector_JAE_WP7B
-JAE_WP7B-P034VA1-R8000_2x17-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-38
-35
-Connector_JAE_WP7B
-JAE_WP7B-P034VA1-R8000_Longpads_2x17-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-38
-35
-Connector_JAE_WP7B
-JAE_WP7B-P040VA1-R8000_2x20-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-44
-41
-Connector_JAE_WP7B
-JAE_WP7B-P040VA1-R8000_Longpads_2x20-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-44
-41
-Connector_JAE_WP7B
-JAE_WP7B-P050VA1-R8000_2x25-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-54
-51
-Connector_JAE_WP7B
-JAE_WP7B-P050VA1-R8000_Longpads_2x25-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-54
-51
-Connector_JAE_WP7B
-JAE_WP7B-P060VA1-R8000_2x30-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-64
-61
-Connector_JAE_WP7B
-JAE_WP7B-P060VA1-R8000_Longpads_2x30-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-64
-61
-Connector_JAE_WP7B
-JAE_WP7B-P070VA1-R8000_2x35-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-74
-71
-Connector_JAE_WP7B
-JAE_WP7B-P070VA1-R8000_Longpads_2x35-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Plug, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66869&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-74
-71
-Connector_JAE_WP7B
-JAE_WP7B-S034VA1-R8000_2x17-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-38
-35
-Connector_JAE_WP7B
-JAE_WP7B-S034VA1-R8000_Longpads_2x17-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-38
-35
-Connector_JAE_WP7B
-JAE_WP7B-S040VA1-R8000_2x20-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-44
-41
-Connector_JAE_WP7B
-JAE_WP7B-S040VA1-R8000_Longpads_2x20-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-44
-41
-Connector_JAE_WP7B
-JAE_WP7B-S050VA1-R8000_2x25-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-54
-51
-Connector_JAE_WP7B
-JAE_WP7B-S050VA1-R8000_Longpads_2x25-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-54
-51
-Connector_JAE_WP7B
-JAE_WP7B-S060VA1-R8000_2x30-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-64
-61
-Connector_JAE_WP7B
-JAE_WP7B-S060VA1-R8000_Longpads_2x30-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-64
-61
-Connector_JAE_WP7B
-JAE_WP7B-S070VA1-R8000_2x35-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-74
-71
-Connector_JAE_WP7B
-JAE_WP7B-S070VA1-R8000_Longpads_2x35-1MP_P0.4mm
-0.4mm Pitch, Stacking Type, Board-to-Board FPC connector, 0.7mm Mating Height, Reworkable, Receptacle, vertical (source: https://www.jae.com/direct/topics/topics_file_download/topics_id=66874&ext_no=06&index=0&_lang=en&v=)
-conn jae fpc board to board
-0
-74
-71
 Connector_JST
 JST_ACH_BM01B-ACHSS-A-GAN-ETF_1x01-1MP_P1.20mm_Vertical
 JST ACH series connector, BM01B-ACHSS-A-GAN-ETF (http://www.jst-mfg.com/product/pdf/eng/eACH.pdf), generated with kicad-footprint-generator
@@ -91034,48 +90810,6 @@ Resistor Radial_Power series Radial pin pitch 7.37mm 10W length 16.1mm width 9mm
 0
 2
 2
-Rocketry_FC
-BME280
-2.5 mm x 2.5 mm x 0.93 mm metal lid LGA
-
-0
-8
-8
-Rocketry_FC
-MPU-9250
-
-
-0
-25
-25
-Rocketry_FC
-PTS810SJK250SMTRLFS
-PTS810SJK250SMTR LFS-1
-Switch
-0
-4
-4
-Rocketry_FC
-RP2040
-QFN, 56 Pin (http://www.cypress.com/file/416486/download#page=40), generated with kicad-footprint-generator ipc_dfn_qfn_generator.py
-QFN DFN_QFN
-0
-70
-57
-Rocketry_FC
-SAM-M8Q-0-10
-
-
-0
-20
-20
-Rocketry_FC
-USB_Micro-B_Amphenol_10103594-0001LF_Horizontal_modified
-Micro USB Type B 10103594-0001LF, http://cdn.amphenol-icc.com/media/wysiwyg/files/drawing/10103594.pdf
-USB USB_B USB_micro USB_OTG
-0
-17
-6
 Rotary_Encoder
 RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm
 Alps rotary encoder, EC12E... with switch, vertical shaft, http://www.alps.com/prod/info/E/HTML/Encoder/Incremental/EC11/EC11E15204A3.html
@@ -93037,6 +92771,13 @@ Diode DO-41_SOD81 series Axial Horizontal pin pitch 10.16mm  length 5.2mm diamet
 2
 2
 TCLib
+FPGA_UPduino_ICE40UP5K
+
+
+0
+48
+48
+TCLib
 ITBA
 Open Source Hardware Symbol
 Logo Symbol OSHW
@@ -93128,6 +92869,13 @@ resistor handsolder
 2
 2
 TCLib
+SW_Tactile
+
+
+0
+4
+4
+TCLib
 TO-18-3
 TO-18-3
 TO-18-3
@@ -93162,6 +92910,20 @@ TO-220-3 Vertical RM 2.54mm
 0
 3
 3
+TCLib
+Toroide
+
+
+0
+2
+2
+TCLib
+UpDuino 3.1V
+
+
+0
+48
+46
 TerminalBlock
 TerminalBlock_Altech_AK300-2_P5.00mm
 Altech AK300 terminal block, pitch 5.0mm, 45 degree angled, see http://www.mouser.com/ds/2/16/PCBMETRC-24178.pdf
@@ -99806,9 +99568,100 @@ Varistor VF
 2
 2
 my_lib
-Crystal_HC49-4H_Vertical
-Crystal THT HC-49-4H http://5hertz.com/pdfs/04404_D.pdf
-THT crystalHC-49-4H
+AMASS_XT60-M
+
+
 0
 2
 2
+my_lib
+AudioJack
+
+
+0
+3
+3
+my_lib
+ESP-32s
+
+
+0
+38
+38
+my_lib
+ESP-32s_ch9102
+
+
+0
+30
+30
+my_lib
+Logo_ITBA_rocketry
+
+
+0
+0
+0
+my_lib
+MODULE_SAM-M8Q-0-10
+
+
+0
+20
+20
+my_lib
+MPU-9250
+
+
+0
+25
+25
+my_lib
+MPU6050
+
+
+0
+8
+8
+my_lib
+PSON65P250X250X100-8N
+2.5 mm x 2.5 mm x 0.93 mm metal lid LGA
+
+0
+8
+8
+my_lib
+PTS810SJK250SMTRLFS
+PTS810SJK250SMTR LFS-1
+Switch
+0
+4
+4
+my_lib
+RP2040-QFN-56
+QFN, 56 Pin (http://www.cypress.com/file/416486/download#page=40), generated with kicad-footprint-generator ipc_dfn_qfn_generator.py
+QFN DFN_QFN
+0
+70
+57
+my_lib
+USB-C-samesky
+
+
+0
+16
+16
+my_lib
+USB_Micro-B_Amphenol_10103594-0001LF_Horizontal_modified
+Micro USB Type B 10103594-0001LF, http://cdn.amphenol-icc.com/media/wysiwyg/files/drawing/10103594.pdf
+USB USB_B USB_micro USB_OTG
+0
+17
+6
+my_lib
+microSD_HC_Wuerth_693072010801
+http://katalog.we-online.de/em/datasheet/693072010801.pdf
+Micro SD Wuerth Wurth Würth
+0
+12
+9

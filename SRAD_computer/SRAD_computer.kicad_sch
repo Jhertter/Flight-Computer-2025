@@ -19302,7 +19302,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_Card:microSD_HC_Wuerth_693072010801"
+		(property "Footprint" "my_lib:microSD_HC_Wuerth_693072010801"
 			(at 334.01 196.85 0)
 			(effects
 				(font
