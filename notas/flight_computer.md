@@ -36,18 +36,18 @@ Investigar un poco sobre la placa para BMS
 
 #### 27/03
 
-- usar shielding de GND para nets sensibles (SAM + flash)
+- ~~usar shielding de GND para nets sensibles (SAM + flash)~~
 - ver alternativas de capacitores para no usar 7 para la rpi -> miguel o pañol
 - poner leds (pueden ser smd, mejor de colores distintos)
-- si es doble capa se puede usar nets como caps para VCC
-- conexión a xbee
-- poner opción de conectar una bornera y que un PMOS haga de llave driveado por el micro (camara), usa latch?
-- el MPU viene con placa integrada, es mejor sacarlo o dejarlo y conectar eso?
+- ~~si es doble capa se puede usar nets como caps para VCC~~
+- ~~conexión a xbee~~
+- ~~poner opción de conectar una bornera y que un PMOS haga de llave driveado por el micro (camara), usa latch~~?
+- ~~el MPU viene con placa integrada, es mejor sacarlo o dejarlo y conectar eso?~~
 - poner pulsador por las dudas (ej: al tocar se envia la mem por el usb)
 - no usar plano de masa general del otro lado (acople)
-- asegurarse que los caps de desacople esten antes de las entradas
+- ~~asegurarse que los caps de desacople esten antes de las entradas~~
 - no exponer el BME280 a mucha luz (es fotosensible)
-- al gps va a haber que aisalrlo en la placa, dejarlo en una esquina separado y tiene que estar en un plano de GND de 50x50 mm 
+- a~~l gps va a haber que aisalrlo en la placa, dejarlo en una esquina separado y tiene que estar en un plano de GND de 50x50 mm ~~
 - ~~ver SAM-M8Q Hardware Integration Manual, UBX-16018358 pag 12~~
 - ~~usar conexión troncal para VCC y GND, dejar al final el gps~~
 - va a haber que hacerle un case con tapa a la placa para evitar corrientes de aire

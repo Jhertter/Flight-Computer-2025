@@ -1,4 +1,4 @@
-24772622847452582
+24777865993415420
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -99596,6 +99596,13 @@ ESP-32s_ch9102
 30
 30
 my_lib
+Logo_ITBA_rocketry
+
+
+0
+0
+0
+my_lib
 MODULE_SAM-M8Q-0-10
 
 
@@ -99624,6 +99631,13 @@ PSON65P250X250X100-8N
 8
 8
 my_lib
+PTS810SJK250SMTRLFS
+PTS810SJK250SMTR LFS-1
+Switch
+0
+4
+4
+my_lib
 RP2040-QFN-56
 QFN, 56 Pin (http://www.cypress.com/file/416486/download#page=40), generated with kicad-footprint-generator ipc_dfn_qfn_generator.py
 QFN DFN_QFN
@@ -99644,3 +99658,10 @@ USB USB_B USB_micro USB_OTG
 0
 17
 6
+my_lib
+microSD_HC_Wuerth_693072010801
+http://katalog.we-online.de/em/datasheet/693072010801.pdf
+Micro SD Wuerth Wurth Würth
+0
+12
+9
