@@ -1,4 +1,4 @@
-25301954252456740
+25303698406262256
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -92225,6 +92225,13 @@ BME280
 8
 8
 Rocketry_FC
+Logo_ITBA_rocketry_2025
+
+
+0
+0
+0
+Rocketry_FC
 MPU-9250
 
 
@@ -101581,8 +101588,8 @@ SAMESKY_UJ20-C-H-G-SMT-6-P16-TR
 
 
 0
-22
-22
+20
+20
 my_lib
 microSD_HC_Molex_47219-2001
 1.10mm Pitch microSD Card Connector, Hinge Type, https://www.molex.com/pdm_docs/sd/472192001_sd.pdf
