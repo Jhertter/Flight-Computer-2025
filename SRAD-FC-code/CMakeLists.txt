@@ -27,6 +27,8 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
+include(libraries/pico-icm20948/src/CMakeLists.txt)
+include(libraries/pico-icm20948/MadgwickAHRS/CMakeLists.txt)
 
 project(SRAD-FC-code C CXX ASM)
 
@@ -35,7 +37,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(SRAD-FC-code SRAD-FC-code.c )
+add_executable(SRAD-FC-code SRAD-FC-code.c)
 
 pico_set_program_name(SRAD-FC-code "SRAD-FC-code")
 pico_set_program_version(SRAD-FC-code "0.1")
@@ -53,11 +55,20 @@ target_include_directories(SRAD-FC-code PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
 
+# add_library(MadgwickAHRS libraries/pico-icm20948/MadgwickAHRS/MadgwickAHRS.c)
+# add_library(pico-icm20948 libraries/pico-icm20948/src/pico-icm20948.c)
+
 # Add any user requested libraries
 target_link_libraries(SRAD-FC-code 
         hardware_spi
         hardware_i2c
+        pico-icm20948
+        MadgwickAHRS
         )
 
-pico_add_extra_outputs(SRAD-FC-code)
+target_include_directories(SRAD-FC-code PRIVATE
+        # ${CMAKE_CURRENT_LIST_DIR}/libraries/pico-icm20948/src/
+        # ${CMAKE_CURRENT_LIST_DIR}/libraries/pico-icm20948/MadgwickAHRS/
+)
 
+pico_add_extra_outputs(SRAD-FC-code)
