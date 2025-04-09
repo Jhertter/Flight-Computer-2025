@@ -5,8 +5,8 @@
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
-#include "libraries/pico-icm20948/src/pico-icm20948.h"
-#include "libraries/pico-icm20948/MadgwickAHRS/MadgwickAHRS.h"
+#include "libraries/src/pico-icm20948.h"
+#include "libraries/MadgwickAHRS/MadgwickAHRS.h"
 
 #define PIN_LED_COM 11
 #define PIN_LED_ALTITUDE 10
@@ -25,13 +25,13 @@
 #define PIN_SD_DAT2 23
 #define PIN_SD_DAT3 22
 
-const int gpio_size = 3;
-const int gpio_array[] = {
+const static int gpio_size = 3;
+const static int gpio_array[] = {
     PIN_LED_COM,
     PIN_LED_ALTITUDE,
     PIN_LED_0};
 
-i2c_inst_t i2c_setUp = {i2c1_hw, false};
+i2c_inst_t i2c_setUp = {i2c0_hw, false};
 icm20948_config_t IMU_config = {0x68, 0x0C, &i2c_setUp};
 icm20984_data_t data;
 madgwick_ahrs_t filter = {0.5f, {1.0f, 0.0f, 0.0f, 0.0f}};
@@ -59,7 +59,7 @@ int main()
     gpio_pull_up(PIN_I2C_SCL);
 
     // Initialize ICM-20948
-    sleep_ms(7000);
+    sleep_ms(1000);
 
     uint8_t reg = 0x00;
     uint8_t dat;

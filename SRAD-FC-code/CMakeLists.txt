@@ -27,8 +27,8 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
-include(libraries/pico-icm20948/src/CMakeLists.txt)
-include(libraries/pico-icm20948/MadgwickAHRS/CMakeLists.txt)
+include(libraries/src/CMakeLists.txt)
+include(libraries/MadgwickAHRS/CMakeLists.txt)
 
 project(SRAD-FC-code C CXX ASM)
 
@@ -67,8 +67,6 @@ target_link_libraries(SRAD-FC-code
         )
 
 target_include_directories(SRAD-FC-code PRIVATE
-        # ${CMAKE_CURRENT_LIST_DIR}/libraries/pico-icm20948/src/
-        # ${CMAKE_CURRENT_LIST_DIR}/libraries/pico-icm20948/MadgwickAHRS/
 )
 
 pico_add_extra_outputs(SRAD-FC-code)
