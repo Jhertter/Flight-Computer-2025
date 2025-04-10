@@ -423,7 +423,7 @@ public:
 
 	bool setI2CAddress(uint8_t deviceAddress, uint16_t maxTime = 250);										 //Changes the I2C address of the u-blox module
 	void setSerialRate(uint32_t baudrate, uint8_t uartPort = COM_PORT_UART1, uint16_t maxTime = defaultMaxWait); //Changes the serial baud rate of the u-blox module, uartPort should be COM_PORT_UART1/2
-	void setNMEAOutputPort(Stream &nmeaOutputPort);																 //Sets the internal variable for the port to direct NMEA characters to
+	// void setNMEAOutputPort(Stream &nmeaOutputPort);																 //Sets the internal variable for the port to direct NMEA characters to
 
 	bool setNavigationFrequency(uint8_t navFreq, uint16_t maxWait = defaultMaxWait);	 //Set the number of nav solutions sent per second
 	uint8_t getNavigationFrequency(uint16_t maxWait = defaultMaxWait);					 //Get the number of nav solutions sent per second currently being output by module
