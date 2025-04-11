@@ -10288,6 +10288,12 @@
 		(uuid "646b5186-7ea2-452e-94b8-636226634a01")
 	)
 	(junction
+		(at 349.25 149.86)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "650c04eb-2bbc-4f60-96e9-9ba38ac5293e")
+	)
+	(junction
 		(at 44.45 93.98)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -11402,6 +11408,16 @@
 			(type default)
 		)
 		(uuid "3e63bc84-8f32-4406-9ef8-66e0b716ff56")
+	)
+	(wire
+		(pts
+			(xy 349.25 149.86) (xy 349.25 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3eecd13b-8679-40eb-9781-6d0bd63aaee4")
 	)
 	(wire
 		(pts
@@ -12985,6 +13001,16 @@
 	)
 	(wire
 		(pts
+			(xy 349.25 149.86) (xy 349.25 151.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b26b62a5-1dd4-4a99-baef-bf6f9cea4c52")
+	)
+	(wire
+		(pts
 			(xy 387.35 34.29) (xy 387.35 36.83)
 		)
 		(stroke
@@ -13975,7 +14001,7 @@
 	)
 	(wire
 		(pts
-			(xy 325.12 149.86) (xy 340.36 149.86)
+			(xy 325.12 149.86) (xy 349.25 149.86)
 		)
 		(stroke
 			(width 0)
@@ -14083,7 +14109,7 @@
 		)
 		(uuid "01ecf743-d36c-4aef-b71e-bab7442bf29b")
 	)
-	(label "UART_Rx"
+	(label "SW_1"
 		(at 340.36 147.32 180)
 		(effects
 			(font
@@ -14113,7 +14139,7 @@
 		)
 		(uuid "075a5481-2431-450e-b3a1-1d8489f74952")
 	)
-	(label "GPIO24"
+	(label "SD_DAT1"
 		(at 340.36 137.16 180)
 		(effects
 			(font
@@ -14313,7 +14339,7 @@
 		)
 		(uuid "3fe9e311-b156-40d6-a3a0-1c3d8193e63e")
 	)
-	(label "UART_Tx"
+	(label "UART_Rx"
 		(at 340.36 144.78 180)
 		(effects
 			(font
@@ -14613,7 +14639,7 @@
 		)
 		(uuid "a6378059-a391-40b7-9221-65c682b962fb")
 	)
-	(label "SW_1"
+	(label "BAT_LVL"
 		(at 340.36 149.86 180)
 		(effects
 			(font
@@ -14773,7 +14799,7 @@
 		)
 		(uuid "cf6ac7ef-ae7a-4e5e-a5b5-4f9345979c97")
 	)
-	(label "SD_DAT1"
+	(label "UART_Tx"
 		(at 340.36 139.7 180)
 		(effects
 			(font
@@ -18177,6 +18203,77 @@
 			(project "SRAD_computer"
 				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
 					(reference "#PWR045")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "TCLib:R")
+		(at 349.25 144.78 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "07e9106e-7310-4b61-9df8-3dba3599f2e2")
+		(property "Reference" "R_BL1"
+			(at 351.79 143.5099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "R"
+			(at 351.79 146.0499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "TCLib:R_0805"
+			(at 334.01 142.748 90)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 349.25 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 346.456 144.78 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a1645052-ae20-40ed-83a4-f1c083c84b8f")
+		)
+		(pin "2"
+			(uuid "e27e51d1-b427-4935-b779-b5dba6a02c09")
+		)
+		(instances
+			(project ""
+				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
+					(reference "R_BL1")
 					(unit 1)
 				)
 			)
@@ -22311,6 +22408,72 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GND")
+		(at 349.25 158.75 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "bc71ac37-d45b-4698-a6fe-b3bd304b5aaa")
+		(property "Reference" "#PWR055"
+			(at 349.25 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 349.25 163.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 349.25 158.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 349.25 158.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 349.25 158.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "436bdda8-374c-4a01-9316-db8d3220ad14")
+		)
+		(instances
+			(project ""
+				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
+					(reference "#PWR055")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "GND_15")
 		(lib_id "power:GND")
 		(at 64.77 173.99 0)
@@ -24273,6 +24436,77 @@
 		)
 	)
 	(symbol
+		(lib_id "TCLib:R")
+		(at 349.25 154.94 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "fcb56793-18b9-488d-ba90-502c461ffcc3")
+		(property "Reference" "R_BL2"
+			(at 351.79 153.6699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "R"
+			(at 351.79 156.2099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "TCLib:R_0805"
+			(at 334.01 152.908 90)
+			(do_not_autoplace yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 349.25 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 346.456 154.94 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d1d861da-f1b4-417e-b6eb-6fef40d82ca6")
+		)
+		(pin "2"
+			(uuid "722b425a-b0da-42cc-83fe-372f13eb5b72")
+		)
+		(instances
+			(project ""
+				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
+					(reference "R_BL2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "GND_5")
 		(lib_id "power:GND")
 		(at 85.09 269.24 0)
@@ -24334,6 +24568,71 @@
 			(project ""
 				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
 					(reference "#PWR021")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "VBUS_1")
+		(lib_id "power:VBUS")
+		(at 349.25 140.97 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ff40a56e-6e02-4847-93b4-260f32fee724")
+		(property "Reference" "#PWR056"
+			(at 349.25 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "VBUS"
+			(at 349.631 136.5758 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 349.25 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 349.25 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 349.25 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "55bbf9b5-6b7f-4235-b6bf-bf0534f771fe")
+		)
+		(instances
+			(project "SRAD_computer"
+				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
+					(reference "#PWR056")
 					(unit 1)
 				)
 			)
