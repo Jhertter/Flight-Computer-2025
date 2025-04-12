@@ -188,7 +188,7 @@ bool SFE_UBLOX_GPS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClass
         uint16_t bytesAvailable = 0;
         uint8_t reg = 0xFD;
         if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, &reg, 1, false) == PICO_ERROR_GENERIC) // Send a restart command. Do not release bus.
-            return (false);                                                    // Sensor did not ACK
+            return (false);                                                                     // Sensor did not ACK
 
         if (i2c_get_read_available(_i2cPort) < 2)
         {
@@ -198,7 +198,9 @@ bool SFE_UBLOX_GPS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClass
             i2c_read_blocking(_i2cPort, _gpsI2Caddress, &lsb, 1, false); // Send a restart command. Do not release bus.
             if (lsb == 0xFF)
             {
-                gpio_put(9,1);
+                if ((_printDebug == true) || (_printLimitedDebug == true)) // Print this if doing limited debugging
+                    printf("checkUbloxI2C: u-blox bug, length lsb is 0xFF\n");
+
                 // I believe this is a u-blox bug. Device should never present an 0xFF.
                 lastCheck = to_ms_since_boot(get_absolute_time()); // Put off checking to avoid I2C bus traffic
                 return (false);
@@ -208,6 +210,9 @@ bool SFE_UBLOX_GPS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClass
 
         if (bytesAvailable == 0)
         {
+            if (_printDebug == true)
+                printf("checkUbloxI2C: OK, zero bytes available\n");
+
             lastCheck = to_ms_since_boot(get_absolute_time()); // Put off checking to avoid I2C bus traffic
             return (false);
         }
@@ -219,13 +224,27 @@ bool SFE_UBLOX_GPS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClass
         {
             // Clear the MSbit
             bytesAvailable &= ~((uint16_t)1 << 15);
+            if ((_printDebug == true) || (_printLimitedDebug == true)) // Print this if doing limited debugging
+                printf("checkUbloxI2C: Bytes available error: %d\n", bytesAvailable);
+        }
+
+        if (bytesAvailable > 100)
+        {
+            if (_printDebug == true)
+                printf("checkUbloxI2C: Large packet of %d bytes received\n", bytesAvailable);
+        }
+        else
+        {
+            if (_printDebug == true)
+                printf("checkUbloxI2C: Reading %d bytes\n", bytesAvailable);
         }
 
         while (bytesAvailable)
         {
             reg = 0xFF;
-            if(i2c_write_blocking(_i2cPort, _gpsI2Caddress, &reg, 1, false) == PICO_ERROR_GENERIC); // Send a restart command. Do not release bus.
-                return (false);                        // Sensor did not ACK
+            if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, &reg, 1, false) == PICO_ERROR_GENERIC)
+                ;           // Send a restart command. Do not release bus.
+            return (false); // Sensor did not ACK
 
             // Limit to 32 bytes or whatever the buffer limit is for given platform
             uint16_t bytesToRead = bytesAvailable;
@@ -247,6 +266,9 @@ bool SFE_UBLOX_GPS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClass
                     {
                         if (incoming == 0x7F)
                         {
+                            if ((_printDebug == true) || (_printLimitedDebug == true)) // Print this if doing limited debugging
+                                printf("checkUbloxU2C: u-blox error, module not ready with data");
+
                             sleep_ms(5); // In logic analyzation, the module starting responding after 1.48ms
                             goto TRY_AGAIN;
                         }
@@ -350,6 +372,10 @@ void SFE_UBLOX_GPS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t re
                     incomingUBX->cls = packetBuf.cls; // Copy the class and ID into incomingUBX (usually packetCfg)
                     incomingUBX->id = packetBuf.id;
                     incomingUBX->counter = packetBuf.counter; // Copy over the .counter too
+                    if (_printDebug == true)
+                    {
+                        printf("process: auto NAV PVT/HPPOSLLH/DOP collision: Requested ID: 0x%0x, Message ID: 0x%0x\n", requestedID, packetBuf.id);
+                    }
                 }
                 else if ((packetBuf.cls == requestedClass) &&
                          (((packetBuf.id == UBX_HNR_ATT) && (requestedID == UBX_HNR_INS || requestedID == UBX_HNR_PVT)) ||
@@ -361,6 +387,11 @@ void SFE_UBLOX_GPS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t re
                     incomingUBX->cls = packetBuf.cls; // Copy the class and ID into incomingUBX (usually packetCfg)
                     incomingUBX->id = packetBuf.id;
                     incomingUBX->counter = packetBuf.counter; // Copy over the .counter too
+
+                    if (_printDebug == true)
+                    {
+                        printf("process: auto HNR ATT/INS/PVT collision: Requested ID: 0x%0x, Message ID: 0x%0x\n", requestedID, packetBuf.id);
+                    }
                 }
                 else
                 {
@@ -390,6 +421,10 @@ void SFE_UBLOX_GPS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t re
         {
             if (packetBuf.len == 0) // Check if length is zero (hopefully this is impossible!)
             {
+                if (_printDebug == true)
+                {
+                    printf("process: ZERO LENGTH packet received: Class: 0x%0x, ID: 0x%0x\n", packetBuf.cls, packetBuf.id);
+                }
                 // If length is zero (!) this will be the first byte of the checksum so record it
                 packetBuf.checksumA = incoming;
             }
@@ -431,6 +466,13 @@ void SFE_UBLOX_GPS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t re
                     packetAck.counter = packetBuf.counter;
                     packetAck.payload[0] = packetBuf.payload[0];
                     packetAck.payload[1] = packetBuf.payload[1];
+                }
+                else
+                {
+                    if (_printDebug == true)
+                    {
+                        printf("process: ACK received with .len != 2: Class: 0x%0x, ID: 0x%0x, len: %d\n", packetBuf.cls, packetBuf.id, packetBuf.len);
+                    }
                 }
             }
         }
@@ -580,6 +622,62 @@ void SFE_UBLOX_GPS::processUBX(uint8_t incoming, ubxPacket *incomingUBX, uint8_t
             else if ((incomingUBX->cls == UBX_CLASS_ACK) && (incomingUBX->id == UBX_ACK_NACK) && (incomingUBX->payload[0] == requestedClass) && (incomingUBX->payload[1] == requestedID))
             {
                 incomingUBX->classAndIDmatch = SFE_UBLOX_PACKET_NOTACKNOWLEDGED; // If we have a match, set the classAndIDmatch flag to NOTACKNOWLEDGED
+                if (_printDebug == true)
+                {
+                    printf("processUBX: NACK received: Requested Class: 0x%0x, Requested ID: 0x%0x\n", requestedClass, requestedID);
+                }
+            }
+
+            // This is not an ACK and we do not have a complete class and ID match
+            // So let's check for an HPPOSLLH message arriving when we were expecting PVT and vice versa
+            else if ((incomingUBX->cls == requestedClass) &&
+                     (((incomingUBX->id == UBX_NAV_PVT) && (requestedID == UBX_NAV_HPPOSLLH || requestedID == UBX_NAV_DOP)) ||
+                      ((incomingUBX->id == UBX_NAV_HPPOSLLH) && (requestedID == UBX_NAV_PVT || requestedID == UBX_NAV_DOP)) ||
+                      ((incomingUBX->id == UBX_NAV_DOP) && (requestedID == UBX_NAV_PVT || requestedID == UBX_NAV_HPPOSLLH))))
+            {
+                // This isn't the message we are looking for...
+                // Let's say so and leave incomingUBX->classAndIDmatch _unchanged_
+                if (_printDebug == true)
+                {
+                    printf("processUBX: auto NAV PVT/HPPOSLLH/DOP collision: Requested ID: 0x%0x, Message ID: 0x%0x\n", requestedID, incomingUBX->id);
+                }
+            }
+            // Let's do the same for the HNR messages
+            else if ((incomingUBX->cls == requestedClass) &&
+                     (((incomingUBX->id == UBX_HNR_ATT) && (requestedID == UBX_HNR_INS || requestedID == UBX_HNR_PVT)) ||
+                      ((incomingUBX->id == UBX_HNR_INS) && (requestedID == UBX_HNR_ATT || requestedID == UBX_HNR_PVT)) ||
+                      ((incomingUBX->id == UBX_HNR_PVT) && (requestedID == UBX_HNR_ATT || requestedID == UBX_HNR_INS))))
+            {
+                // This isn't the message we are looking for...
+                // Let's say so and leave incomingUBX->classAndIDmatch _unchanged_
+                if (_printDebug == true)
+                {
+                    printf("processUBX: auto HNR ATT/INS/PVT collision: Requested ID: 0x%0x, Message ID: 0x%0x\n", requestedID, incomingUBX->id);
+                }
+            }
+
+            if (_printDebug == true)
+            {
+                printf("Incoming: Size: %d, Received: ", incomingUBX->len);
+                ;
+                printPacket(incomingUBX);
+
+                if (incomingUBX->valid == SFE_UBLOX_PACKET_VALIDITY_VALID)
+                {
+                    printf("packetCfg now valid\n");
+                }
+                if (packetAck.valid == SFE_UBLOX_PACKET_VALIDITY_VALID)
+                {
+                    printf("packetAck now valid\n");
+                }
+                if (incomingUBX->classAndIDmatch == SFE_UBLOX_PACKET_VALIDITY_VALID)
+                {
+                    printf("packetCfg classAndIDmatch\n");
+                }
+                if (packetAck.classAndIDmatch == SFE_UBLOX_PACKET_VALIDITY_VALID)
+                {
+                    printf("packetAck classAndIDmatch\n");
+                }
             }
 
             // We've got a valid packet, now do something with it but only if ignoreThisPayload is false
@@ -604,6 +702,16 @@ void SFE_UBLOX_GPS::processUBX(uint8_t incoming, ubxPacket *incomingUBX, uint8_t
             else if ((incomingUBX->cls == UBX_CLASS_ACK) && (incomingUBX->payload[0] == requestedClass) && (incomingUBX->payload[1] == requestedID))
             {
                 incomingUBX->classAndIDmatch = SFE_UBLOX_PACKET_VALIDITY_NOT_VALID; // If we have a match, set the classAndIDmatch flag to not valid
+            }
+            if ((_printDebug == true) || (_printLimitedDebug == true)) // Print this if doing limited debugging
+            {
+                // Drive an external pin to allow for easier logic analyzation
+                printf("Checksum failed: checksumA: %d, checksumB: %d ", incomingUBX->checksumA, incomingUBX->checksumB);
+
+                printf(" rollingChecksumA: %d, rollingChecksumB: %d\n", rollingChecksumA, rollingChecksumB);
+
+                printf("Failed : Size: %d, Received: ", incomingUBX->len);
+                printPacket(incomingUBX);
             }
         }
     }
@@ -638,7 +746,14 @@ void SFE_UBLOX_GPS::processUBX(uint8_t incoming, ubxPacket *incomingUBX, uint8_t
     if (overrun || (incomingUBX->counter == MAX_PAYLOAD_SIZE))
     {
         // Something has gone very wrong
-        currentSentence = NONE;                                    // Reset the sentence to being looking for a new start char
+        currentSentence = NONE; // Reset the sentence to being looking for a new start char
+    }
+    if ((_printDebug == true) || (_printLimitedDebug == true)) // Print this if doing limited debugging
+    {
+        if (overrun)
+            printf("processUBX: buffer overrun detected\n");
+        else
+            printf("processUBX: counter hit MAX_PAYLOAD_SIZE\n");
     }
 }
 
@@ -900,11 +1015,19 @@ sfe_ublox_status_e SFE_UBLOX_GPS::sendCommand(ubxPacket *outgoingUBX, uint16_t m
 
     calcChecksum(outgoingUBX); // Sets checksum A and B bytes of the packet
 
+    if (_printDebug == true)
+    {
+        printf("\nSending: ");
+        printPacket(outgoingUBX);
+    }
+
     if (commType == COMM_TYPE_I2C)
     {
         retVal = sendI2cCommand(outgoingUBX, maxWait);
         if (retVal != SFE_UBLOX_STATUS_SUCCESS)
         {
+            if (_printDebug == true)
+                printf("Send I2C Command failed\n");
             return retVal;
         }
     }
@@ -914,10 +1037,14 @@ sfe_ublox_status_e SFE_UBLOX_GPS::sendCommand(ubxPacket *outgoingUBX, uint16_t m
         // Depending on what we just sent, either we need to look for an ACK or not
         if (outgoingUBX->cls == UBX_CLASS_CFG)
         {
+            if (_printDebug == true)
+                printf("sendCommand: Waiting for ACK response\n");
             retVal = waitForACKResponse(outgoingUBX, outgoingUBX->cls, outgoingUBX->id, maxWait); // Wait for Ack response
         }
         else
         {
+            if (_printDebug == true)
+                printf("sendCommand: Waiting for No ACK response\n");
             retVal = waitForNoACKResponse(outgoingUBX, outgoingUBX->cls, outgoingUBX->id, maxWait); // Wait for Ack response
         }
     }
@@ -930,20 +1057,20 @@ sfe_ublox_status_e SFE_UBLOX_GPS::sendI2cCommand(ubxPacket *outgoingUBX, uint16_
     // Point at 0xFF data register
     const int buffer_size = 100;
     uint8_t reg[buffer_size] = {0};
-    reg[0] = 0xFF; // Dummy register address
-    if(i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 1, false) == PICO_ERROR_GENERIC) // Send a dummy byte to set the register pointer
-        return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE); // Sensor did not ACK
+    reg[0] = 0xFF;                                                                         // Dummy register address
+    if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 1, false) == PICO_ERROR_GENERIC) // Send a dummy byte to set the register pointer
+        return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE);                                        // Sensor did not ACK
 
     // Write header bytes
     reg[0] = UBX_SYNCH_1; // μ - oh ublox, you're funny. I will call you micro-blox from now on.
     reg[1] = UBX_SYNCH_2; // b
     reg[2] = outgoingUBX->cls;
     reg[3] = outgoingUBX->id;
-    reg[4] = outgoingUBX->len & 0xFF; // LSB
-    reg[5] = outgoingUBX->len >> 8;   // MSB
+    reg[4] = outgoingUBX->len & 0xFF;                                                      // LSB
+    reg[5] = outgoingUBX->len >> 8;                                                        // MSB
     if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 6, false) == PICO_ERROR_GENERIC) // Send header bytes
-        return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE); // Sensor did not ACK
-    i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 1, false); 
+        return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE);                                        // Sensor did not ACK
+    i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 1, false);
 
     // Write payload. Limit the sends into 32 byte chunks
     // This code based on ublox: https://forum.u-blox.com/index.php/20528/how-to-use-i2c-to-get-the-nmea-frames
@@ -958,12 +1085,11 @@ sfe_ublox_status_e SFE_UBLOX_GPS::sendI2cCommand(ubxPacket *outgoingUBX, uint16_
         if (len > i2cTransactionSize)
             len = i2cTransactionSize;
 
-
         for (uint16_t x = 0; x < len; x++)
             reg[x] = outgoingUBX->payload[startSpot + x]; // Write a portion of the payload to the bus
 
-        if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, len, false)  == PICO_ERROR_GENERIC)      // Don't release bus
-            return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE); // Sensor did not ACK
+        if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, len, false) == PICO_ERROR_GENERIC) // Don't release bus
+            return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE);                                          // Sensor did not ACK
 
         //*outgoingUBX->payload += len; //Move the pointer forward
         startSpot += len; // Move the pointer forward
@@ -977,11 +1103,11 @@ sfe_ublox_status_e SFE_UBLOX_GPS::sendI2cCommand(ubxPacket *outgoingUBX, uint16_
         reg[0] = outgoingUBX->payload[startSpot]; // Write the last byte of the payload
         size = 1;
     }
-    reg[0+size] = outgoingUBX->checksumA; // Checksum A
-    reg[1+size] = outgoingUBX->checksumB; // Checksum B
+    reg[0 + size] = outgoingUBX->checksumA; // Checksum A
+    reg[1 + size] = outgoingUBX->checksumB; // Checksum B
     // All done transmitting bytes. Release bus.
-    if(i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 2+size, false) == PICO_ERROR_GENERIC) // Send checksum bytes   
-        return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE); // Sensor did not ACK
+    if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 2 + size, false) == PICO_ERROR_GENERIC) // Send checksum bytes
+        return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE);                                               // Sensor did not ACK
     return (SFE_UBLOX_STATUS_SUCCESS);
 }
 
@@ -991,8 +1117,8 @@ bool SFE_UBLOX_GPS::isConnected(uint16_t maxWait)
     uint8_t reg[1] = {0};
     if (commType == COMM_TYPE_I2C)
     {
-        if(i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 1, false) == PICO_ERROR_GENERIC) // Send a dummy byte to set the register pointer
-            return false; // Sensor did not ack
+        if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 1, false) == PICO_ERROR_GENERIC) // Send a dummy byte to set the register pointer
+            return false;                                                                      // Sensor did not ack
     }
 
     // Query navigation rate to see whether we get a meaningful response
@@ -1045,6 +1171,50 @@ void SFE_UBLOX_GPS::addToChecksum(uint8_t incoming)
     rollingChecksumB += rollingChecksumA;
 }
 
+// Pretty prints the current ubxPacket
+void SFE_UBLOX_GPS::printPacket(ubxPacket *packet)
+{
+    if (_printDebug == true)
+    {
+        printf("CLS: ");
+        if (packet->cls == UBX_CLASS_NAV) // 1
+            printf("NAV");
+        else if (packet->cls == UBX_CLASS_ACK) // 5
+            printf("ACK");
+        else if (packet->cls == UBX_CLASS_CFG) // 6
+            printf("CFG");
+        else if (packet->cls == UBX_CLASS_MON) // 0x0A
+            printf("MON");
+        else
+            printf("0x%0x", packet->cls);
+
+        printf(" ID: ");
+        if (packet->cls == UBX_CLASS_NAV && packet->id == UBX_NAV_PVT)
+            printf("PVT");
+        else if (packet->cls == UBX_CLASS_CFG && packet->id == UBX_CFG_RATE)
+            printf("RATE");
+        else if (packet->cls == UBX_CLASS_CFG && packet->id == UBX_CFG_CFG)
+            printf("SAVE");
+        else
+            printf("0x%0x", packet->id);
+
+        printf(" Len: 0x%0x", packet->len);
+
+        // Only print the payload is ignoreThisPayload is false otherwise
+        // we could be printing gibberish from beyond the end of packetBuf
+        if (ignoreThisPayload == false)
+        {
+            printf(" Payload: ");
+
+            for (int x = 0; x < packet->len; x++)
+                printf(" 0x%0x", packet->payload[x]);
+        }
+        else
+            printf(" Payload: IGNORED");
+
+        printf("\n");
+    }
+}
 
 //=-=-=-=-=-=-=-= Specific commands =-=-=-=-=-=-=-==-=-=-=-=-=-=-=
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -3765,13 +3935,13 @@ bool SFE_UBLOX_GPS::pushRawData(uint8_t *dataBytes, size_t numDataBytes)
 
         if (bytesLeftToWrite > 0)
         {
-            if(i2c_write_blocking(_i2cPort, _gpsI2Caddress, dataBytes, 1, true) == PICO_ERROR_GENERIC) // Send a restart command. Do not release bus.
-                return (false);                        // Sensor did not ACK
+            if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, dataBytes, 1, true) == PICO_ERROR_GENERIC) // Send a restart command. Do not release bus.
+                return (false);                                                                         // Sensor did not ACK
         }
         else
         {
             if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, dataBytes, 1, false) == PICO_ERROR_GENERIC) // We're done. Release bus.
-                return (false);                   // Sensor did not ACK
+                return (false);                                                                          // Sensor did not ACK
         }
     }
 

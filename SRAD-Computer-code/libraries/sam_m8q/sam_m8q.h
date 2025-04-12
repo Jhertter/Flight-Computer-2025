@@ -1,6 +1,7 @@
 #ifndef SAM_M8Q_H
 #define SAM_M8Q_H
 
+#include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
