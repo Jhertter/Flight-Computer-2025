@@ -50,6 +50,7 @@ void init_leds();
 int main()
 {
     stdio_init_all();
+    sleep_ms(10000);
     init_leds();
 
     i2c_init(&i2c_setUp, I2C_FREQUENCY); //320kHz
@@ -59,7 +60,6 @@ int main()
     gpio_pull_up(PIN_I2C_SCL);
 
     // Initialize ICM-20948
-    // sleep_ms(1000);
 
     // if (!icm20948_init(&IMU_config))
     // {
