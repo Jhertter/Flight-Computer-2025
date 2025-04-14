@@ -44,7 +44,6 @@
 #define SPARKFUN_UBLOX_ARDUINO_LIBRARY_H
 
 #include <stdio.h>
-// #include <cstring>
 #include "pico/stdlib.h"
 #include "string.h"
 #include "hardware/i2c.h"
@@ -819,7 +818,7 @@ public:
   // The daysIntoFture parameter makes it easy to get the data for (e.g.) tomorrow based on today's date
   // Returns numDataBytes if unsuccessful
   // TO DO: enhance this so it will find the nearest data for the chosen day - instead of an exact match
-  size_t findMGAANOForDate(const String &dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture = 0);
+  size_t findMGAANOForDate((const uint8_t *)dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture = 0);
   size_t findMGAANOForDate(const uint8_t *dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture = 0);
 
 // Read the whole navigation data base. The receiver will send all available data from its internal database.

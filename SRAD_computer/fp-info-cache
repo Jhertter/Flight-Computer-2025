@@ -1,4 +1,4 @@
-25263620133862296
+25265364800929439
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -101338,6 +101338,13 @@ Connector
 0
 14
 14
+my_lib
+693071010811
+693071010811-6
+Connector
+0
+12
+12
 my_lib
 AMASS_XT60-M
 

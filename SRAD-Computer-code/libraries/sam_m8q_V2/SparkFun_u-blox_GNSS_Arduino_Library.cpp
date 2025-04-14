@@ -5990,9 +5990,9 @@ bool SFE_UBLOX_GNSS::setPositionAssistanceLLH(int32_t lat, int32_t lon, int32_t 
 // The daysIntoFture parameter makes it easy to get the data for (e.g.) tomorrow based on today's date
 // Returns numDataBytes if unsuccessful
 // TO DO: enhance this so it will find the nearest data for the chosen day - instead of an exact match
-size_t SFE_UBLOX_GNSS::findMGAANOForDate(const String &dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture)
+size_t SFE_UBLOX_GNSS::findMGAANOForDate((const uint8_t *)dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture)
 {
-    return (findMGAANOForDateInternal((const uint8_t *)dataBytes.c_str(), numDataBytes, year, month, day, daysIntoFuture));
+    return (findMGAANOForDateInternal(dataBytes, numDataBytes, year, month, day, daysIntoFuture));
 }
 size_t SFE_UBLOX_GNSS::findMGAANOForDate(const uint8_t *dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture)
 {
