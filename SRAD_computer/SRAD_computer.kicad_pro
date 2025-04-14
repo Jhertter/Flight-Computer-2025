@@ -58,16 +58,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        [
-          "unconnected_items|85470000|71927352|c617b15b-80bf-4bac-9a4c-9fd3bd971382|a10db25e-57bb-466f-a072-455e2f77a450",
-          ""
-        ],
-        [
-          "unconnected_items|86270000|78802352|a6a89da3-ca2f-4aaf-aeeb-d1b8a5634ae7|c617b15b-80bf-4bac-9a4c-9fd3bd971382",
-          ""
-        ]
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -116,6 +107,7 @@
         "solder_mask_bridge": "error",
         "starved_thermal": "error",
         "text_height": "warning",
+        "text_on_edge_cuts": "error",
         "text_thickness": "warning",
         "through_hole_pad_without_hole": "error",
         "too_many_vias": "error",
@@ -196,9 +188,9 @@
       ],
       "track_widths": [
         0.0,
-        0.1,
         0.2,
         0.4,
+        0.8,
         1.0,
         2.0
       ],
@@ -527,7 +519,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "./",
-      "plot": "",
+      "plot": "outputs/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "outputs/SRAD_computer.step",
