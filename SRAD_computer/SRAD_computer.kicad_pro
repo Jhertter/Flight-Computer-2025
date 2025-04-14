@@ -519,7 +519,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "./",
-      "plot": "outputs/",
+      "plot": "outputs/Gerber_files/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "outputs/SRAD_computer.step",
