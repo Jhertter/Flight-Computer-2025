@@ -39,6 +39,12 @@
     "files.associations": {
         "compare": "cpp",
         "cstdint": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "format": "cpp",
+        "initializer_list": "cpp",
+        "span": "cpp",
+        "string": "cpp"
     }
 }
