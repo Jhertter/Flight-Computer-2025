@@ -5,7 +5,7 @@
       "Application": "Pcbnew",
       "Version": "9.0.1"
     },
-    "CreationDate": "2025-04-08T19:45:02-03:00"
+    "CreationDate": "2025-04-14T00:51:25-03:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
@@ -34,47 +34,47 @@
   ],
   "FilesAttributes": [
     {
-      "Path": "SRAD_computer-F_Cu.gbr",
+      "Path": "SRAD_computer-F_Cu.gtl",
       "FileFunction": "Copper,L1,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "SRAD_computer-B_Cu.gbr",
+      "Path": "SRAD_computer-B_Cu.gbl",
       "FileFunction": "Copper,L2,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "SRAD_computer-F_Paste.gbr",
+      "Path": "SRAD_computer-F_Paste.gtp",
       "FileFunction": "SolderPaste,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "SRAD_computer-B_Paste.gbr",
+      "Path": "SRAD_computer-B_Paste.gbp",
       "FileFunction": "SolderPaste,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "SRAD_computer-F_Silkscreen.gbr",
+      "Path": "SRAD_computer-F_Silkscreen.gto",
       "FileFunction": "Legend,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "SRAD_computer-B_Silkscreen.gbr",
+      "Path": "SRAD_computer-B_Silkscreen.gbo",
       "FileFunction": "Legend,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "SRAD_computer-F_Mask.gbr",
+      "Path": "SRAD_computer-F_Mask.gts",
       "FileFunction": "SolderMask,Top",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "SRAD_computer-B_Mask.gbr",
+      "Path": "SRAD_computer-B_Mask.gbs",
       "FileFunction": "SolderMask,Bot",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "SRAD_computer-Edge_Cuts.gbr",
+      "Path": "SRAD_computer-Edge_Cuts.gm1",
       "FileFunction": "Profile",
       "FilePolarity": "Positive"
     }
