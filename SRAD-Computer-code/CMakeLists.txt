@@ -31,6 +31,7 @@ include(libraries/icm_20948/CMakeLists.txt)
 include(libraries/MadgwickAHRS/CMakeLists.txt)
 include(libraries/sam_m8q/CMakeLists.txt)
 include(libraries/sam_m8q_v2/CMakeLists.txt)
+include(libraries/bmp_280/CMakeLists.txt)
 
 
 project(SRAD-Computer-code C CXX ASM)
@@ -69,6 +70,7 @@ target_link_libraries(SRAD-Computer-code
         MadgwickAHRS
         sam_m8q
         sam_m8q_v2
+        bmp280
         )
 
 target_include_directories(SRAD-Computer-code PRIVATE
