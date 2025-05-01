@@ -40,7 +40,7 @@
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "SparkFun_u-blox_GNSS_Arduino_Library.h"
+#include "sam_m8q_v2.h"
 
 using namespace std;
 
@@ -647,9 +647,13 @@ bool SFE_UBLOX_GNSS::begin(i2c_inst_t &i2cPort, uint8_t deviceAddress, uint16_t 
 
     // New in v2.0: allocate memory for the packetCfg payload here - if required. (The user may have called setPacketCfgPayloadSize already)
     if (packetCfgPayloadSize == 0)
+    {
+        printf("begin: packetCfgPayloadSize is zero.\n");
         setPacketCfgPayloadSize(MAX_PAYLOAD_SIZE);
+    }
 
     // New in v2.0: allocate memory for the file buffer - if required. (The user should have called setFileBufferSize already)
+    setFileBufferSize(100);
     createFileBuffer();
 
     // Call isConnected up to three times - tests on the NEO-M8U show the CFG RATE poll occasionally being ignored
@@ -660,7 +664,7 @@ bool SFE_UBLOX_GNSS::begin(i2c_inst_t &i2cPort, uint8_t deviceAddress, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
         {
-            printf("begin: isConnected - second attempt");
+            printf("\nbegin: isConnected - second attempt");
         }
 #endif
         connected = isConnected(maxWait);
@@ -671,7 +675,7 @@ bool SFE_UBLOX_GNSS::begin(i2c_inst_t &i2cPort, uint8_t deviceAddress, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
         {
-            printf("begin: isConnected - third attempt");
+            printf("\nbegin: isConnected - third attempt");
         }
 #endif
         connected = isConnected(maxWait);
@@ -741,10 +745,8 @@ bool SFE_UBLOX_GNSS::isConnected(uint16_t maxWait)
     // We could simply request the config for any port but, just for giggles, let's request the config for most appropriate port
     if (commType == COMM_TYPE_I2C)
         return (getPortSettingsInternal(COM_PORT_I2C, maxWait));
-    else if (commType == COMM_TYPE_SERIAL)
-        return (getPortSettingsInternal(COM_PORT_UART1, maxWait)); // Could be UART2 - but this is just a response check
-    else                                                           // if (commType == COMM_TYPE_SPI)
-        return (getPortSettingsInternal(COM_PORT_SPI, maxWait));
+
+    return false;
 }
 
 void SFE_UBLOX_GNSS::disableDebugging(void)
@@ -837,12 +839,11 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
         // Get the number of bytes available from the module
         uint16_t bytesAvailable = 0;
         uint8_t reg = 0xFD;
-        if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, &reg, 1, true) == PICO_ERROR_GENERIC) // Send a restart command. Do not release bus.
-        return (false);     
+        if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, &reg, 1, false) == PICO_ERROR_GENERIC) // Send a restart command. Do not release bus.
+            return (false);     
         
         // Forcing requestFrom to use a restart would be unwise. If bytesAvailable is zero, we want to surrender the bus.
-        uint8_t bytesReturned = i2c_get_read_available(_i2cPort);
-        if (bytesReturned == 2)
+        if (i2c_get_read_available(_i2cPort) < 2)
         {
             uint8_t msb = 0;
             i2c_read_blocking(_i2cPort, _gpsI2Caddress, &msb, 1, true); // Send a restart command. Do not release bus.
@@ -850,13 +851,14 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
             i2c_read_blocking(_i2cPort, _gpsI2Caddress, &lsb, 1, true); // Send a restart command. Do not release bus.
             
             bytesAvailable = (uint16_t)msb << 8 | lsb;
+            printf("checkUbloxI2C: Data bytes available: %d\n", bytesAvailable);
         }
         else
         {
         #ifndef SFE_UBLOX_REDUCED_PROG_MEM
             if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
             {
-                printf("checkUbloxI2C: I2C error: requestFrom 0xFD returned %d bytes\n", bytesReturned);
+                printf("\ncheckUbloxI2C: I2C error: requestFrom 0xFD returned >2 bytes\n");
             }
         #endif
             return (false); // Sensor did not return 2 bytes
@@ -867,7 +869,7 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
             #ifndef SFE_UBLOX_REDUCED_PROG_MEM
             if (_printDebug == true)
             {
-                printf("checkUbloxI2C: OK, zero bytes available");
+                printf("checkUbloxI2C: OK, zero bytes available\n");
             }
 #endif
             lastCheck = to_ms_since_boot(get_absolute_time()); // Put off checking to avoid I2C bus traffic
@@ -908,67 +910,14 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
         }
 #endif
 
-        while (bytesAvailable)
+        uint8_t buffer[65535] = {0}; // Buffer for incoming data
+        i2c_read_blocking(_i2cPort, _gpsI2Caddress, buffer, bytesAvailable, true); // Send a restart command. Do not release bus.
+
+        for (uint16_t x = 0; x < bytesAvailable; x++)
         {
-            // From the u-blox integration manual:
-            // "There are two forms of DDC read transfer. The "random access" form includes a peripheral register
-            //  address and thus allows any register to be read. The second "current address" form omits the
-            //  register address. If this second form is used, then an address pointer in the receiver is used to
-            //  determine which register to read. This address pointer will increment after each read unless it
-            //  is already pointing at register 0xFF, the highest addressable register, in which case it remains
-            //  unaltered."
-            // This means that after reading bytesAvailable from 0xFD and 0xFE, the address pointer will already be
-            // pointing at 0xFF, so we do not need to write it here. The next four lines can be commented.
-            //_i2cPort->beginTransmission(_gpsI2Caddress);
-            //_i2cPort->write(0xFF);                     //0xFF is the register to read data from
-            // if (_i2cPort->endTransmission(false) != 0) //Send a restart command. Do not release bus.
-            //  return (false);                          //Sensor did not ACK
-
-            // Limit to 32 bytes or whatever the buffer limit is for given platform
-            uint16_t bytesToRead = bytesAvailable; // 16-bit
-            if (bytesToRead > i2cTransactionSize)  // Limit for i2cTransactionSize is 8-bit
-                bytesToRead = i2cTransactionSize;
-
-            // TRY_AGAIN:
-
-            // Here it would be desireable to use a restart where possible / supported, but only if there will be multiple reads.
-            // However, if an individual requestFrom fails, we could end up leaving the bus hanging.
-            // On balance, it is probably safest to not use restarts here.
-            for (uint16_t x = 0; x < bytesToRead; x++)
-            {
-                uint8_t incoming = 0;
-                i2c_read_blocking(_i2cPort, _gpsI2Caddress, &incoming, 1, true); // Send a restart command. Do not release bus.
-
-                // Check to see if the first read is 0x7F. If it is, the module is not ready to respond. Stop, wait, and try again.
-                // Note: the integration manual says:
-                //"If there is no data awaiting transmission from the receiver, then this register will deliver the value 0xFF,
-                //  which cannot be the first byte of a valid message."
-                // But it can be the first byte waiting to be read from the buffer if we have already read part of the message.
-                // Therefore I think this check needs to be commented.
-                //  if (x == 0)
-                //  {
-                //    if ((incoming == 0x7F) && (ubx7FcheckDisabled == false))
-                //    {
-                //      if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-                //      {
-                //        printf("checkUbloxU2C: u-blox error, module not ready with data (7F error)");
-                //      }
-                //      sleep_ms(5); //In logic analyzation, the module starting responding after 1.48ms
-                //      if (debugPin >= 0)
-                //      {
-                //        digitalWrite((uint8_t)debugPin, LOW);
-                //        sleep_ms(10);
-                //        digitalWrite((uint8_t)debugPin, HIGH);
-                //      }
-                //      goto TRY_AGAIN;
-                //    }
-                //  }
-
-                process(incoming, incomingUBX, requestedClass, requestedID); // Process this valid character
-            }
-
-            bytesAvailable -= bytesToRead;
+            process(buffer[x], incomingUBX, requestedClass, requestedID); // Process this valid character
         }
+        printf("salio xd \n");
     }
 
     return (true);
@@ -1638,15 +1587,15 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
                 storeFileBytes(&nmeaAddressField[0], 6); // Add start character and address field to the file buffer
             }
             // Check if it should be passed to processNMEA
-            if (processThisNMEA())
-            {
-                processNMEA(nmeaAddressField[0]); // Process the start character and address field
-                processNMEA(nmeaAddressField[1]);
-                processNMEA(nmeaAddressField[2]);
-                processNMEA(nmeaAddressField[3]);
-                processNMEA(nmeaAddressField[4]);
-                processNMEA(nmeaAddressField[5]);
-            }
+            // if (processThisNMEA())
+            // {
+            //     processNMEA(nmeaAddressField[0]); // Process the start character and address field
+            //     processNMEA(nmeaAddressField[1]);
+            //     processNMEA(nmeaAddressField[2]);
+            //     processNMEA(nmeaAddressField[3]);
+            //     processNMEA(nmeaAddressField[4]);
+            //     processNMEA(nmeaAddressField[5]);
+            // }
         }
 
         if ((nmeaByteCounter > 5) || (nmeaByteCounter < 0)) // Should we add incoming to the file buffer and/or pass it to processNMEA?
@@ -1673,8 +1622,8 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
 #endif
             if (logThisNMEA())
                 storeFileBytes(&incoming, 1); // Add incoming to the file buffer
-            if (processThisNMEA())
-                processNMEA(incoming); // Pass incoming to processNMEA
+            // if (processThisNMEA())
+            //     processNMEA(incoming); // Pass incoming to processNMEA
         }
 
         if (incoming == '*')
@@ -1932,14 +1881,14 @@ bool SFE_UBLOX_GNSS::processThisNMEA()
 // Or user could pipe each character to a buffer, radio, etc.
 void SFE_UBLOX_GNSS::processNMEA_v(char incoming)
 {
-    // If user has assigned an output port then pipe the characters there
-    if (_nmeaOutputPort != NULL)
-        _nmeaOutputPort->write(incoming); // Echo this byte to the serial port
+    // // If user has assigned an output port then pipe the characters there
+    // if (_nmeaOutputPort != NULL)
+    //     _nmeaOutputPort->write(incoming); // Echo this byte to the serial port
 }
 
 void SFE_UBLOX_GNSS::processNMEA(char incoming)
 {
-    processNMEA_v(incoming);
+    // processNMEA_v(incoming);
 }
 
 #ifndef SFE_UBLOX_DISABLE_AUTO_NMEA
@@ -2709,19 +2658,19 @@ void SFE_UBLOX_GNSS::processUBX(uint8_t incoming, ubxPacket *incomingUBX, uint8_
 
                 if (incomingUBX->valid == SFE_UBLOX_PACKET_VALIDITY_VALID)
                 {
-                    printf("packetCfg now valid");
+                    printf("packetCfg now valid\n");
                 }
                 if (packetAck.valid == SFE_UBLOX_PACKET_VALIDITY_VALID)
                 {
-                    printf("packetAck now valid");
+                    printf("packetAck now valid\n");
                 }
                 if (incomingUBX->classAndIDmatch == SFE_UBLOX_PACKET_VALIDITY_VALID)
                 {
-                    printf("packetCfg classAndIDmatch");
+                    printf("packetCfg classAndIDmatch\n");
                 }
                 if (packetAck.classAndIDmatch == SFE_UBLOX_PACKET_VALIDITY_VALID)
                 {
-                    printf("packetAck classAndIDmatch");
+                    printf("packetAck classAndIDmatch\n");
                 }
             }
 #endif
@@ -4212,14 +4161,6 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendCommand(ubxPacket *outgoingUBX, uint16_t 
             return retVal;
         }
     }
-    else if (commType == COMM_TYPE_SERIAL)
-    {
-        sendSerialCommand(outgoingUBX);
-    }
-    else if (commType == COMM_TYPE_SPI)
-    {
-        sendSpiCommand(outgoingUBX);
-    }
 
     if (maxWait > 0)
     {
@@ -4229,7 +4170,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendCommand(ubxPacket *outgoingUBX, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
             if (_printDebug == true)
             {
-                printf("sendCommand: Waiting for ACK response");
+                printf("sendCommand: Waiting for ACK response\n");
             }
 #endif
             retVal = waitForACKResponse(outgoingUBX, outgoingUBX->cls, outgoingUBX->id, maxWait); // Wait for Ack response
@@ -4239,7 +4180,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendCommand(ubxPacket *outgoingUBX, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
             if (_printDebug == true)
             {
-                printf("sendCommand: Waiting for No ACK response");
+                printf("sendCommand: Waiting for No ACK response\n");
             }
 #endif
             retVal = waitForNoACKResponse(outgoingUBX, outgoingUBX->cls, outgoingUBX->id, maxWait); // Wait for Ack response
@@ -4310,19 +4251,21 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendI2cCommand(ubxPacket *outgoingUBX, uint16
     while (bytesLeftToSend > 0)
     {
         uint16_t len = bytesLeftToSend; // How many bytes should we actually write?
-        if (len > i2cTransactionSize)   // Limit len to i2cTransactionSize
-            len = i2cTransactionSize;
+        // if (len > i2cTransactionSize)   // Limit len to i2cTransactionSize
+        //     len = i2cTransactionSize;
 
-        bytesLeftToSend -= len; // Calculate how many bytes will be left after we do this write
+        // bytesLeftToSend -= len; // Calculate how many bytes will be left after we do this write
 
-        // If bytesLeftToSend is zero, that's OK.
-        // If bytesLeftToSend is >= 2, that's OK.
-        // But if bytesLeftToSend is 1, we need to adjust len to make sure we write at least 2 bytes in the final write
-        if (bytesLeftToSend == 1)
-        {
-            len -= 1;             // Decrement len by 1
-            bytesLeftToSend += 1; // Increment bytesLeftToSend by 1
-        }
+        // // If bytesLeftToSend is zero, that's OK.
+        // // If bytesLeftToSend is >= 2, that's OK.
+        // // But if bytesLeftToSend is 1, we need to adjust len to make sure we write at least 2 bytes in the final write
+        // if (bytesLeftToSend == 1)
+        // {
+        //     len -= 1;             // Decrement len by 1
+        //     bytesLeftToSend += 1; // Increment bytesLeftToSend by 1
+        // }
+
+        bytesLeftToSend--;
 
         if (bytesSent == 0) // Is this the first write? If it is, write the header bytes
         {
@@ -4336,7 +4279,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendI2cCommand(ubxPacket *outgoingUBX, uint16
             {
                 reg[x + msgLen] = outgoingUBX->payload[startSpot + x];
                 bytesSent++;
-                msgLen;
+                msgLen++;
             }
             startSpot += x;
 
@@ -4384,10 +4327,11 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendI2cCommand(ubxPacket *outgoingUBX, uint16
     }
 
     // All done transmitting bytes. Release bus.
-    if (i2c_write_blocking(_i2cPort, (uint8_t)_gpsI2Caddress, reg, msgLen, false) != 0)
+    printf("sendI2CCommand: I2C end transmission. Bytes sent %d.\n", msgLen);
+    if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 9, false) == PICO_ERROR_GENERIC)
         return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE); // Sensor did not ACK
-
-    (void)maxWait; // Do something with maxWait just to avoid the pesky compiler warnings!
+    
+        (void)maxWait; // Do something with maxWait just to avoid the pesky compiler warnings!
 
     return (SFE_UBLOX_STATUS_SUCCESS);
 }
@@ -5990,11 +5934,7 @@ bool SFE_UBLOX_GNSS::setPositionAssistanceLLH(int32_t lat, int32_t lon, int32_t 
 // The daysIntoFture parameter makes it easy to get the data for (e.g.) tomorrow based on today's date
 // Returns numDataBytes if unsuccessful
 // TO DO: enhance this so it will find the nearest data for the chosen day - instead of an exact match
-size_t SFE_UBLOX_GNSS::findMGAANOForDate((const uint8_t *)dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture)
-{
-    return (findMGAANOForDateInternal(dataBytes, numDataBytes, year, month, day, daysIntoFuture));
-}
-size_t SFE_UBLOX_GNSS::findMGAANOForDate(const uint8_t *dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture)
+size_t SFE_UBLOX_GNSS::findMGAANOForDate(uint8_t *dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture)
 {
     return (findMGAANOForDateInternal(dataBytes, numDataBytes, year, month, day, daysIntoFuture));
 }
@@ -13404,6 +13344,12 @@ bool SFE_UBLOX_GNSS::getPortSettingsInternal(uint8_t portID, uint16_t maxWait)
     // The data is parsed as part of processing the response
     sfe_ublox_status_e result = sendCommand(&packetCfg, maxWait);
     bool retVal = false;
+
+    printf("getPortSettingsInternal: result = %d\n", result);
+    printf("getPortSettingsInternal: packetCfg.cls = %d\n", packetCfg.cls);
+    printf("getPortSettingsInternal: packetCfg.id = %d\n", packetCfg.id);
+    printf("getPortSettingsInternal: packetCfg.len = %d\n", packetCfg.len);
+    printf("getPortSettingsInternal: packetCfg.startingSpot = %d\n", packetCfg.startingSpot);
 
     if (result == SFE_UBLOX_STATUS_DATA_RECEIVED)
         retVal = true;

@@ -7,9 +7,9 @@
 #include "hardware/uart.h"
 #include "libraries/icm_20948/pico-icm20948.h"
 #include "libraries/MadgwickAHRS/MadgwickAHRS.h"
-#include "libraries/sam_m8q/sam_m8q.h"
+#include "libraries/sam_m8q_v2/sam_m8q_v2.h"
 
-#define I2C_FREQUENCY 320000
+#define I2C_FREQUENCY 100000
 
 #define PIN_LED_COM 11
 #define PIN_LED_ERROR 10
@@ -39,7 +39,7 @@ icm20948_config_t IMU_config = {0x69, 0x0C, &i2c_setUp};
 icm20984_data_t data;
 madgwick_ahrs_t filter = {0.5f, {1.0f, 0.0f, 0.0f, 0.0f}};
 
-SFE_UBLOX_GPS GNSS;
+SFE_UBLOX_GNSS GNSS;
 
 bool dataflag = false;
 

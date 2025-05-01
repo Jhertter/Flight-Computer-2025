@@ -40,8 +40,8 @@
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef SPARKFUN_UBLOX_ARDUINO_LIBRARY_H
-#define SPARKFUN_UBLOX_ARDUINO_LIBRARY_H
+#ifndef SAM_M8Q_H
+#define SAM_M8Q_H
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -792,12 +792,12 @@ public:
 // allowing the user to override with their own time data with setUTCTimeAssistance.
 // offset allows a sub-set of the data to be sent - starting from offset.
 #define defaultMGAdelay 7 // Default to waiting for 7ms between each MGA message
-  size_t pushAssistNowData(const String &dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
-  size_t pushAssistNowData(const uint8_t *dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
-  size_t pushAssistNowData(bool skipTime, const String &dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
-  size_t pushAssistNowData(bool skipTime, const uint8_t *dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
-  size_t pushAssistNowData(size_t offset, bool skipTime, const String &dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
-  size_t pushAssistNowData(size_t offset, bool skipTime, const uint8_t *dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
+  // size_t pushAssistNowData(const String &dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
+  // size_t pushAssistNowData(const uint8_t *dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
+  // size_t pushAssistNowData(bool skipTime, const String &dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
+  // size_t pushAssistNowData(bool skipTime, const uint8_t *dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
+  // size_t pushAssistNowData(size_t offset, bool skipTime, const String &dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
+  // size_t pushAssistNowData(size_t offset, bool skipTime, const uint8_t *dataBytes, size_t numDataBytes, sfe_ublox_mga_assist_ack_e mgaAck = SFE_UBLOX_MGA_ASSIST_ACK_NO, uint16_t maxWait = defaultMGAdelay);
 
 // Provide initial time assistance
 #define defaultMGAINITIMEtAccS 2  // Default to setting the seconds time accuracy to 2 seconds
@@ -818,8 +818,7 @@ public:
   // The daysIntoFture parameter makes it easy to get the data for (e.g.) tomorrow based on today's date
   // Returns numDataBytes if unsuccessful
   // TO DO: enhance this so it will find the nearest data for the chosen day - instead of an exact match
-  size_t findMGAANOForDate((const uint8_t *)dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture = 0);
-  size_t findMGAANOForDate(const uint8_t *dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture = 0);
+  size_t findMGAANOForDate(uint8_t *dataBytes, size_t numDataBytes, uint16_t year, uint8_t month, uint8_t day, uint8_t daysIntoFuture = 0);
 
 // Read the whole navigation data base. The receiver will send all available data from its internal database.
 // Data is written to dataBytes. Set maxNumDataBytes to the (maximum) size of dataBytes.
@@ -855,7 +854,7 @@ public:
   bool setUSBOutput(uint8_t comSettings, uint16_t maxWait = defaultMaxWait);   // Configure USB port to output UBX, NMEA, RTCM3, SPARTN or a combination thereof
   bool setSPIOutput(uint8_t comSettings, uint16_t maxWait = defaultMaxWait);   // Configure SPI port to output UBX, NMEA, RTCM3, SPARTN or a combination thereof
   // void setNMEAOutputPort(Stream &nmeaOutputPort);                              // Sets the internal variable for the port to direct NMEA characters to
-  void setOutputPort(Stream &outputPort);                                      // Sets the internal variable for the port to direct ALL characters to
+  // void setOutputPort(Stream &outputPort);                                      // Sets the internal variable for the port to direct ALL characters to
 
   // Reset to defaults
 
@@ -1701,14 +1700,14 @@ private:
 
   // Variables
   i2c_inst_t *_i2cPort;              // The generic connection to user's chosen I2C hardware
-  Stream *_nmeaOutputPort = NULL; // The user can assign an output port to print NMEA sentences if they wish
+  // Stream *_nmeaOutputPort = NULL; // The user can assign an output port to print NMEA sentences if they wish
   uint8_t _csPin;     // The chip select pin
   uint32_t _spiSpeed; // The speed to use for SPI (Hz)
 
   uint8_t _gpsI2Caddress = 0x42; // Default 7-bit unshifted address of the ublox 6/7/8/M8/F9 series
   // This can be changed using the ublox configuration software
 
-  bool _printDebug = false;        // Flag to print the serial commands we are sending to the Serial port for debug
+  bool _printDebug = true;        // Flag to print the serial commands we are sending to the Serial port for debug
   bool _printLimitedDebug = false; // Flag to print limited debug messages. Useful for I2C debugging or high navigation rates
 
   bool ubx7FcheckDisabled = false; // Flag to indicate if the "7F" check should be ignored in checkUbloxI2C

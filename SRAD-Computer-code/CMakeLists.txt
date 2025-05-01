@@ -30,6 +30,8 @@ include(pico_sdk_import.cmake)
 include(libraries/icm_20948/CMakeLists.txt)
 include(libraries/MadgwickAHRS/CMakeLists.txt)
 include(libraries/sam_m8q/CMakeLists.txt)
+include(libraries/sam_m8q_v2/CMakeLists.txt)
+
 
 project(SRAD-Computer-code C CXX ASM)
 
@@ -66,6 +68,7 @@ target_link_libraries(SRAD-Computer-code
         pico-icm20948
         MadgwickAHRS
         sam_m8q
+        sam_m8q_v2
         )
 
 target_include_directories(SRAD-Computer-code PRIVATE
