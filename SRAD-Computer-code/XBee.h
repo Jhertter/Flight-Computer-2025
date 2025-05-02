@@ -3,7 +3,10 @@
 
 
 #define PACKET_SIZE (6) // 12 bytes for each sensor data
-#define MSG_SIZE (12*PACKET_SIZE) 
+#define MSG_CANT (12) // 12 sensors
+#define MSG_SIZE (MSG_CANT * PACKET_SIZE) 
+
+#include "math.h"
 
 // PACKET SHAPE: 
 // <MISSION_TIME>,<PACKET_COUNT>,<STATUS>,<ALTITUDE>,<TILT>, <GPS_LATITUDE>,<GPS_LONGITUDE>,<GPS_ALTITUDE>,<ACCELERATION>,<TEMPERATURE>,<BATTERY_VOLTAGE>
@@ -19,6 +22,13 @@ enum MissionStatus
     RECOVERY,
     MISSION_COMPLETE,
     MISSION_FAILED
+};
+
+enum d_point
+{
+    DPOINT_NONE = -1,
+    DPOINT_ONE = 0,
+    DPOINT_TWO = 1
 };
 
 class XBee 
@@ -51,12 +61,28 @@ class XBee
         char acceleration;
         char temperature;
         char battery_voltage;
+        char start_time;
+
+        char* data_arr[MSG_CANT] = {
+            &mission_time,
+            &packet_count,
+            &status,
+            &altitude,
+            &tilt,
+            &absolute_time,
+            &gps_latitude,
+            &gps_longitude,
+            &gps_altitude,
+            &acceleration,
+            &temperature,
+            &battery_voltage
+        };
 
     public:
-        XBee();
+        XBee(long time);
         ~XBee();
 
-        void setMissionTime(char time);
+        void setMissionTime(long time);
         void setPacketCount();
         void setStatus(char status);
         void setAltitude(char altitude);

@@ -664,7 +664,7 @@ bool SFE_UBLOX_GNSS::begin(i2c_inst_t &i2cPort, uint8_t deviceAddress, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
         {
-            printf("\nbegin: isConnected - second attempt");
+            printf("\nbegin: isConnected - second attempt\n");
         }
 #endif
         connected = isConnected(maxWait);
@@ -675,7 +675,7 @@ bool SFE_UBLOX_GNSS::begin(i2c_inst_t &i2cPort, uint8_t deviceAddress, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
         {
-            printf("\nbegin: isConnected - third attempt");
+            printf("\nbegin: isConnected - third attempt\n");
         }
 #endif
         connected = isConnected(maxWait);
@@ -738,7 +738,13 @@ bool SFE_UBLOX_GNSS::isConnected(uint16_t maxWait)
     if (commType == COMM_TYPE_I2C)
     {
         if (i2c_write_blocking(_i2cPort, _gpsI2Caddress, reg, 1, false) == PICO_ERROR_GENERIC) // Send a dummy byte to set the register pointer
+        {
+            if (_printDebug == true)
+            {
+                printf("isConnected: GNSS did not ack\n");
+            }
             return false;       // Sensor did not ack
+        }
     }
 
     // Query port configuration to see whether we get a meaningful response
@@ -843,26 +849,32 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
             return (false);     
         
         // Forcing requestFrom to use a restart would be unwise. If bytesAvailable is zero, we want to surrender the bus.
-        if (i2c_get_read_available(_i2cPort) < 2)
-        {
-            uint8_t msb = 0;
-            i2c_read_blocking(_i2cPort, _gpsI2Caddress, &msb, 1, true); // Send a restart command. Do not release bus.
-            uint8_t lsb = 0;
-            i2c_read_blocking(_i2cPort, _gpsI2Caddress, &lsb, 1, true); // Send a restart command. Do not release bus.
+        // if (i2c_get_read_available(_i2cPort) < 2)
+        // {
+            // uint8_t msb = 0;
+            // i2c_read_blocking(_i2cPort, _gpsI2Caddress, &msb, 1, true); // Send a restart command. Do not release bus.
+            // uint8_t lsb = 0;
+            // i2c_read_blocking(_i2cPort, _gpsI2Caddress, &lsb, 1, true); // Send a restart command. Do not release bus.
             
-            bytesAvailable = (uint16_t)msb << 8 | lsb;
+            // bytesAvailable = (uint16_t)msb << 8 | lsb;
+            uint8_t aux[2];
+            i2c_read_blocking(_i2cPort, _gpsI2Caddress, (uint8_t *)&aux, 2, true); // Send a restart command. Do not release bus.
+            bytesAvailable = (uint16_t)aux[0] << 8 | aux[1];
+            if (bytesAvailable & (1 << 15))
+                bytesAvailable &= ~(1 << 15);
             printf("checkUbloxI2C: Data bytes available: %d\n", bytesAvailable);
-        }
-        else
-        {
-        #ifndef SFE_UBLOX_REDUCED_PROG_MEM
-            if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-            {
-                printf("\ncheckUbloxI2C: I2C error: requestFrom 0xFD returned >2 bytes\n");
-            }
-        #endif
-            return (false); // Sensor did not return 2 bytes
-        }
+
+        // }
+        // else
+        // {
+        // #ifndef SFE_UBLOX_REDUCED_PROG_MEM
+        //     if (((_printDebug == true) || (_printLimitedDebug == true))) // This is important. Print this if doing limited debugging
+        //     {
+        //         printf("\ncheckUbloxI2C: I2C error: requestFrom 0xFD returned >2 bytes\n");
+        //     }
+        //     #endif
+        //     return (false); // Sensor did not return 2 bytes
+        // }
         
         if (bytesAvailable == 0)
         {
@@ -879,23 +891,23 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
         // Check for undocumented bit error. We found this doing logic scans.
         // This error is rare but if we incorrectly interpret the first bit of the two 'data available' bytes as 1
         // then we have far too many bytes to check. May be related to I2C setup time violations: https://github.com/sparkfun/SparkFun_Ublox_Arduino_Library/issues/40
-        if (bytesAvailable & ((uint16_t)1 << 15))
-        {
-            // Clear the MSbit
-            bytesAvailable &= ~((uint16_t)1 << 15);
+        // if (bytesAvailable & ((uint16_t)1 << 15))
+        // {
+        //     // Clear the MSbit
+        //     bytesAvailable &= ~((uint16_t)1 << 15);
 
-            // if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-            // {
-            //   _debugSerial->print(F("checkUbloxI2C: Bytes available error: ");
-            //   _debugSerial->println(bytesAvailable);
-            //   if (debugPin >= 0)
-            //   {
-            //     digitalWrite((uint8_t)debugPin, LOW);
-            //     sleep_ms(10);
-            //     digitalWrite((uint8_t)debugPin, HIGH);
-            //   }
-            // }
-        }
+        //     // if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
+        //     // {
+        //     //   _debugSerial->print(F("checkUbloxI2C: Bytes available error: ");
+        //     //   _debugSerial->println(bytesAvailable);
+        //     //   if (debugPin >= 0)
+        //     //   {
+        //     //     digitalWrite((uint8_t)debugPin, LOW);
+        //     //     sleep_ms(10);
+        //     //     digitalWrite((uint8_t)debugPin, HIGH);
+        //     //   }
+        //     // }
+        // }
 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (bytesAvailable > 100)
@@ -911,8 +923,10 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
 #endif
 
         uint8_t buffer[65535] = {0}; // Buffer for incoming data
-        i2c_read_blocking(_i2cPort, _gpsI2Caddress, buffer, bytesAvailable, true); // Send a restart command. Do not release bus.
-
+        if(i2c_read_blocking(_i2cPort, _gpsI2Caddress, buffer, bytesAvailable, true) != bytesAvailable){ // Read all the bytes at once. Do not release bus.
+            printf("checkUbloxI2C: Reading Error\n");
+            return false; 
+        }
         for (uint16_t x = 0; x < bytesAvailable; x++)
         {
             process(buffer[x], incomingUBX, requestedClass, requestedID); // Process this valid character
@@ -13356,6 +13370,14 @@ bool SFE_UBLOX_GNSS::getPortSettingsInternal(uint8_t portID, uint16_t maxWait)
 
     if (result == SFE_UBLOX_STATUS_DATA_OVERWRITTEN)
         retVal = true;
+
+    // TEST
+    // if (result == SFE_UBLOX_STATUS_DATA_SENT)
+    // {
+    //     // We are only expecting an ACK
+    //     retVal = true;
+    // }
+    
 
     // Now disable automatic support for CFG-PRT (see above)
     delete packetUBXCFGPRT;
