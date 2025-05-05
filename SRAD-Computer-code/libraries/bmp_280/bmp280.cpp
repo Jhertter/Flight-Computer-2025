@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <math.h>
 #include "bmp280.h"
+#include <stdio.h>
 
 BMP280::BMP280(i2c_inst_t *i2cInst)
 {
@@ -47,6 +48,7 @@ bool BMP280::begin(uint8_t addr, uint8_t chipid)
 {
     this->addr = addr;
     _sensorID = read8(BMP280_REGISTER_CHIPID);
+    printf("Sensor ID: %d\n", _sensorID);
     if (_sensorID != chipid)
     {
         return false;
@@ -203,10 +205,12 @@ uint8_t BMP280::read8(unsigned char reg)
     if (i2cInst)
     {
         buffer[0] = uint8_t(reg);
-
+        printf("escribe\n"); //BORRAR
         i2c_write_blocking(i2cInst, addr, buffer, 1, false);
+        printf("lee\n"); //BORRAR
         i2c_read_blocking(i2cInst, addr, buffer, 1, false);
     }
+    printf("sale\n"); //BORRAR
     return buffer[0];
 }
 

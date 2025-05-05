@@ -1707,7 +1707,7 @@ private:
   uint8_t _gpsI2Caddress = 0x42; // Default 7-bit unshifted address of the ublox 6/7/8/M8/F9 series
   // This can be changed using the ublox configuration software
 
-  bool _printDebug = true;        // Flag to print the serial commands we are sending to the Serial port for debug
+  bool _printDebug = false;        // Flag to print the serial commands we are sending to the Serial port for debug
   bool _printLimitedDebug = false; // Flag to print limited debug messages. Useful for I2C debugging or high navigation rates
 
   bool ubx7FcheckDisabled = false; // Flag to indicate if the "7F" check should be ignored in checkUbloxI2C

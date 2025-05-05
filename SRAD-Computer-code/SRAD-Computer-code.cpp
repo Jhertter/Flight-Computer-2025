@@ -53,7 +53,7 @@ void init_leds();
 int main()
 {
     stdio_init_all();
-    sleep_ms(10000);
+    sleep_ms(5000);
     init_leds();
     gpio_init(PIN_I2C_SCL);
     gpio_init(PIN_I2C_SDA);
@@ -91,9 +91,9 @@ int main()
     // int16_t accel_raw[3] = {0}, gyro_raw[3] = {0}, mag_raw[3] = {0}, temp_raw = 0;
     // float accel_g[3] = {0}, gyro_dps[3] = {0}, mag_ut[3] = {0}, temp_c = 0;
     
-    // // Initialize BMP280
+    // Initialize BMP280
     printf("Initializing ESU...\n");
-    if(BMP.begin(0x76, 0x58) == false)
+    if(BMP.begin(0x76, 0x60) == false)
     {
         printf("ESU not detected at default I2C address. Please check wiring. Freezing.");
         gpio_put(PIN_LED_ERROR, 1);
@@ -106,21 +106,22 @@ int main()
     }
             
     // Initialize SAM_M8Q
-    // printf("Initializing GNSS...\n");
-    // if (GNSS.begin(i2c_setUp, 0x42) == false) // Connect to the Ublox module using Wire port
-    // {
-    //     printf("GNSS not detected at default I2C address. Please check wiring. Freezing.");
-    //     gpio_put(PIN_LED_ERROR, 1);
-    //     while (1);
-    // }
-    // else
-    // {
-    //     gpio_put(PIN_LED_ALTITUDE, 1);
-    //     printf("GNSS initialized.\n");
-    // }
+    printf("Initializing GNSS...\n");
+    if (GNSS.begin(i2c_setUp, 0x42) == false) // Connect to the Ublox module using Wire port
+    {
+        printf("GNSS not detected at default I2C address. Please check wiring. Freezing.");
+        gpio_put(PIN_LED_ERROR, 1);
+        while (1);
+    }
+    else
+    {
+        printf("GNSS initialized.\n");
+        // GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS, 11000);
+        GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GLONASS, 11000);
+    }
 
-    static repeating_timer_t timer;
-    add_repeating_timer_ms(10, &read_icm20948, NULL, &timer);
+    // static repeating_timer_t timer;
+    // add_repeating_timer_ms(10, &read_icm20948, NULL, &timer);
             
     while (true)
     {
@@ -128,22 +129,36 @@ int main()
 
         if (to_ms_since_boot(get_absolute_time()) - lastTime > 1000)
         {
+            // printf("Reading GNSS data...\n");
             lastTime = to_ms_since_boot(get_absolute_time()); // Update the timer
 
-            uint8_t satelliteCount = GNSS.getSIV();
-            printf("Satellites: %d, ", satelliteCount);
+            // printf("Time: %d:%d:%d\n", GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
 
-            long latitude = GNSS.getLatitude();
-            printf("Lat: %f,", latitude);
+            // uint8_t satelliteCount = GNSS.getSIV();
+            // printf("Satellites: %d, ", satelliteCount);
 
-            long longitude = GNSS.getLongitude();
-            printf(" Long: %f (degrees * 10^-7), ", longitude);
+            // long latitude = GNSS.getLatitude();
+            // printf("Lat: %f,", latitude);
 
-            long altitude = GNSS.getAltitude();
-            printf(" Alt: %d (mm), ", altitude);
+            // long longitude = GNSS.getLongitude();
+            // printf(" Long: %f (degrees * 10^-7), ", longitude);
 
-            long altitudeMSL = GNSS.getAltitudeMSL();
-            printf(" AltMSL: %d (mm)\n", altitudeMSL);
+            // long altitude = GNSS.getAltitude();
+            // printf(" Alt: %d (mm), ", altitude);
+            
+            // long altitudeMSL = GNSS.getAltitudeMSL();
+            // printf(" AltMSL: %d (mm)\n", altitudeMSL);
+            
+            printf("Reading ESU data...\n");
+
+            float pressure = BMP.readPressure();
+            printf("Pressure: %f (Pa)\n", pressure);
+
+            float temperature = BMP.readTemperature();
+            printf("Temperature: %f (C)\n", temperature);
+
+            float altitude = BMP.readAltitude(1013.25);
+            printf("Altitude: %f (m)\n", altitude);
 
             // if (dataflag)
             // {
@@ -207,11 +222,11 @@ void init_leds()
 
     for (int i = 0; i < 6; i++)
     {
-        gpio_toggle(PIN_LED_COM);
-        sleep_ms(100);
         gpio_toggle(PIN_LED_ALTITUDE);
         sleep_ms(100);
         gpio_toggle(PIN_LED_ERROR);
+        sleep_ms(100);
+        gpio_toggle(PIN_LED_COM);
         sleep_ms(100);
     }
 }
