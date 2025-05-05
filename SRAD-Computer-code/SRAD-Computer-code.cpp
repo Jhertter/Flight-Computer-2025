@@ -40,7 +40,7 @@ icm20948_config_t IMU_config = {0x69, 0x0C, &i2c_setUp};
 icm20984_data_t data;
 madgwick_ahrs_t filter = {0.5f, {1.0f, 0.0f, 0.0f, 0.0f}};
 
-BMP280 BMP(&i2c_setUp);
+BMP280 BME(&i2c_setUp);
 
 SFE_UBLOX_GNSS GNSS;
 
@@ -91,9 +91,9 @@ int main()
     // int16_t accel_raw[3] = {0}, gyro_raw[3] = {0}, mag_raw[3] = {0}, temp_raw = 0;
     // float accel_g[3] = {0}, gyro_dps[3] = {0}, mag_ut[3] = {0}, temp_c = 0;
     
-    // Initialize BMP280
+    // Initialize BME280
     printf("Initializing ESU...\n");
-    if(BMP.begin(0x76, 0x60) == false)
+    if(BME.begin(0x76, 0x60) == false)
     {
         printf("ESU not detected at default I2C address. Please check wiring. Freezing.");
         gpio_put(PIN_LED_ERROR, 1);
@@ -132,33 +132,33 @@ int main()
             // printf("Reading GNSS data...\n");
             lastTime = to_ms_since_boot(get_absolute_time()); // Update the timer
 
-            // printf("Time: %d:%d:%d\n", GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
+            printf("Time: %d:%d:%d - ", GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
 
-            // uint8_t satelliteCount = GNSS.getSIV();
-            // printf("Satellites: %d, ", satelliteCount);
+            uint8_t satelliteCount = GNSS.getSIV();
+            printf("Satellites: %d - ", satelliteCount);
 
-            // long latitude = GNSS.getLatitude();
-            // printf("Lat: %f,", latitude);
+            long latitude = GNSS.getLatitude();
+            printf("Lat: %f - ", latitude);
 
-            // long longitude = GNSS.getLongitude();
-            // printf(" Long: %f (degrees * 10^-7), ", longitude);
+            long longitude = GNSS.getLongitude();
+            printf("Long: %f (degrees * 10^-7) - ", longitude);
 
-            // long altitude = GNSS.getAltitude();
-            // printf(" Alt: %d (mm), ", altitude);
+            long altitude = GNSS.getAltitude();
+            printf("Alt: %d (mm) - ", altitude);
             
-            // long altitudeMSL = GNSS.getAltitudeMSL();
-            // printf(" AltMSL: %d (mm)\n", altitudeMSL);
+            long altitudeMSL = GNSS.getAltitudeMSL();
+            printf("AltMSL: %d (mm) - ", altitudeMSL);
             
-            printf("Reading ESU data...\n");
+            // printf("Reading ESU data...\n");
 
-            float pressure = BMP.readPressure();
-            printf("Pressure: %f (Pa)\n", pressure);
+            float pressure = BME.readPressure();
+            printf("Pressure: %f (hPa) - ", pressure/100);
 
-            float temperature = BMP.readTemperature();
-            printf("Temperature: %f (C)\n", temperature);
+            float temperature = BME.readTemperature();
+            printf("Temperature: %f (C) - ", temperature);
 
-            float altitude = BMP.readAltitude(1013.25);
-            printf("Altitude: %f (m)\n", altitude);
+            float altitudeBME = BME.readAltitude(1013.25);
+            printf("Alt BME: %f (m)\n", altitudeBME);
 
             // if (dataflag)
             // {
