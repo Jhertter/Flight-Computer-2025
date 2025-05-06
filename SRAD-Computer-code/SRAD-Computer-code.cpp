@@ -5,6 +5,7 @@
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
+#include "hardware/flash.h"
 #include "libraries/icm_20948/pico-icm20948.h"
 #include "libraries/MadgwickAHRS/MadgwickAHRS.h"
 #include "libraries/sam_m8q_v2/sam_m8q_v2.h"
@@ -29,6 +30,8 @@
 #define PIN_SD_DAT2 23
 #define PIN_SD_DAT3 22
 
+#define FLASH_OFFSET (0x01000000) //definimos un offset para no pisar nuestro código
+
 const static int gpio_size = 3;
 const static int gpio_array[] = {
     PIN_LED_COM,
@@ -49,6 +52,8 @@ bool dataflag = false;
 bool read_icm20948(repeating_timer_t *rt);
 void gpio_toggle(int pin);
 void init_leds();
+
+const uint8_t * flashBase = (const uint8_t *)(XIP_BASE + FLASH_OFFSET);
 
 int main()
 {
@@ -137,11 +142,13 @@ int main()
             uint8_t satelliteCount = GNSS.getSIV();
             printf("Satellites: %d - ", satelliteCount);
 
+            // latitude +-90ª
             long latitude = GNSS.getLatitude();
-            printf("Lat: %f - ", latitude);
+            printf("Lat: %ld - ", latitude);
 
+            // longitude +-180ª
             long longitude = GNSS.getLongitude();
-            printf("Long: %f (degrees * 10^-7) - ", longitude);
+            printf("Long: %ld (degrees * 10^-7) - ", longitude);
 
             long altitude = GNSS.getAltitude();
             printf("Alt: %d (mm) - ", altitude);
