@@ -58,7 +58,7 @@ SFE_UBLOX_GNSS GNSS;
 xbee_uart_cfg_t uart_cfg = {UART_ID, UART_BAUD, UART_STOP_BITS, UART_DATA_BITS, UART_PARITY};
 XBee xbee(uart_cfg, to_ms_since_boot(get_absolute_time()));
 
-const uint8_t * flashBase = (const uint8_t *)(XIP_BASE + FLASH_OFFSET);
+const uint8_t * flashBase = (const uint8_t *)(XIP_BASE + FLASH_OFFSET); //deprecated
 
 typedef struct{
     float pressure = 0;
@@ -77,7 +77,7 @@ typedef struct{
 } packet;
 
 #define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE/sizeof(packet)))
-#define FLASH_SIZE ((uint32_t)(2 * 1024 * 1024))
+#define FLASH_SIZE ((uint32_t)(16 * 1024 * 1024))
 
 packet parameters;
 packet test;
@@ -124,33 +124,33 @@ int main()
     sleep_ms(5000);
 
     // Initialize ICM-20948
-    printf("Initializing IMU...\n");
-    if (!icm20948_init(&IMU_config))
-    {
-        gpio_put(PIN_LED_ERROR, 1);
-        printf("IMU not detected at I2C address. Freezing");
-    }
+    // printf("Initializing IMU...\n");
+    // if (!icm20948_init(&IMU_config))
+    // {
+    //     gpio_put(PIN_LED_ERROR, 1);
+    //     printf("IMU not detected at I2C address. Freezing");
+    // }
     // else 
     // {
     //     gpio_put(PIN_LED_COM, 1);
     //     printf("IMU initialized.\n");
     // }
     
-    icm20948_cal_gyro(&IMU_config, &data.gyro_bias[0]);
-    printf("calibrated gyro: %d %d %d\n", data.gyro_bias[0], data.gyro_bias[1], data.gyro_bias[2]);
+    // icm20948_cal_gyro(&IMU_config, &data.gyro_bias[0]);
+    // printf("calibrated gyro: %d %d %d\n", data.gyro_bias[0], data.gyro_bias[1], data.gyro_bias[2]);
 
-    icm20948_cal_accel(&IMU_config, &data.accel_bias[0]);
-    printf("calibrated accel: %d %d %d\n", data.accel_bias[0], data.accel_bias[1], data.accel_bias[2]);
+    // icm20948_cal_accel(&IMU_config, &data.accel_bias[0]);
+    // printf("calibrated accel: %d %d %d\n", data.accel_bias[0], data.accel_bias[1], data.accel_bias[2]);
     
     
-    // Initialize BME280
-    printf("Initializing ESU...\n");
-    if(BME.begin(0x76, 0x60) == false)
-    {
-        printf("ESU not detected at default I2C address. Please check wiring. Freezing.");
-        gpio_put(PIN_LED_ERROR, 1);
-        while (1);
-    }
+    // // Initialize BME280
+    // printf("Initializing ESU...\n");
+    // if(BME.begin(0x76, 0x60) == false)
+    // {
+    //     printf("ESU not detected at default I2C address. Please check wiring. Freezing.");
+    //     gpio_put(PIN_LED_ERROR, 1);
+    //     while (1);
+    // }
     // else
     // {
     //     gpio_put(PIN_LED_ALTITUDE, 1);
@@ -158,19 +158,19 @@ int main()
     // }
     
     // Initialize SAM_M8Q
-    printf("Initializing GNSS...\n");
-    if (GNSS.begin(i2c_setUp, 0x42) == false) // Connect to the Ublox module using Wire port
-    {
-        printf("GNSS not detected at default I2C address. Please check wiring. Freezing.");
-        gpio_put(PIN_LED_ERROR, 1);
-        while (1);
-    }
-    else
-    {
-        // printf("GNSS initialized.\n");
-        GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GLONASS, 11000);
-    }
-    printf("All sensors initialized without errors.\n");
+    // printf("Initializing GNSS...\n");
+    // if (GNSS.begin(i2c_setUp, 0x42) == false) // Connect to the Ublox module using Wire port
+    // {
+    //     printf("GNSS not detected at default I2C address. Please check wiring. Freezing.");
+    //     gpio_put(PIN_LED_ERROR, 1);
+    //     while (1);
+    // }
+    // else
+    // {
+    //     // printf("GNSS initialized.\n");
+    //     GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GLONASS, 11000);
+    // }
+    // printf("All sensors initialized without errors.\n");
     gpio_put(PIN_LED_ALTITUDE, 1);
     
     // static repeating_timer_t timer_imu;
@@ -182,30 +182,29 @@ int main()
     // static repeating_timer_t timer_bme;
     // add_repeating_timer_ms(30, &read_bme, &parameters, &timer_bme);
     
-    // for(uint8_t i = 0; i<19; i++)
-    // {
-    //     saveData(test);
-    // }
+    for(uint8_t i = 0; i<19; i++)
+    {
+        saveData(test);
+    }
 
-    // packet* test_ptr = (packet*)((FLASH_SIZE >> 1) - FLASH_PAGE_SIZE);
-    // for(uint8_t j = 0; j < 19; j++)
-    // {
-    //     test_ptr += j;
-    //     if(j % BUFFER_SIZE == 0)
-    //     {
-    //         test_ptr = (packet*)((FLASH_SIZE >> 1) - FLASH_PAGE_SIZE - FLASH_PAGE_SIZE * j/BUFFER_SIZE);
-    //         test_ptr += j - BUFFER_SIZE;
-    //     }
-    //     printf("Packet %d: ", j);
-    //     printf("Packet %d: ", test_ptr->GNSS_time);
-    //     printf("Lat: %ld - ", test_ptr->latitude);
-    //     printf("Long: %ld - ", test_ptr->longitude);
-    //     printf("Alt: %d (mm) - ", test_ptr->altitude);
-    //     printf("AltMSL: %d (mm) - ", test_ptr->altitude_MSL);
-    //     printf("Pressure: %f (hPa) - ", test_ptr->pressure/100);
-    //     printf("Temperature: %f (C) - ", test_ptr->temperature);
-    //     printf("Alt BME: %f (m)\n", test_ptr->altitudeBME);
-    // }
+    packet* test_ptr = (packet*)(XIP_BASE + (FLASH_SIZE) - FLASH_PAGE_SIZE);
+    for(uint8_t j = 0; j < 19; j++)
+    {
+        if(j % BUFFER_SIZE == 0)
+        {
+            test_ptr = (packet*)((FLASH_SIZE) - FLASH_PAGE_SIZE - FLASH_PAGE_SIZE * j/BUFFER_SIZE);
+        }
+        printf("Packet %d: ", j);
+        printf("Packet %d: ", test_ptr->GNSS_time);
+        printf("Lat: %ld - ", test_ptr->latitude);
+        printf("Long: %ld - ", test_ptr->longitude);
+        printf("Alt: %d (mm) - ", test_ptr->altitude);
+        printf("AltMSL: %d (mm) - ", test_ptr->altitude_MSL);
+        printf("Pressure: %f (hPa) - ", test_ptr->pressure/100);
+        printf("Temperature: %f (C) - ", test_ptr->temperature);
+        printf("Alt BME: %f (m)\n", test_ptr->altitudeBME);
+        test_ptr += j;
+    }
 
     while (true)
     {
@@ -337,7 +336,7 @@ uint32_t saveData(packet data)
         {
             printf("Erasing sector %d\n", saves / 16);
             sleep_ms(100);
-            uint32_t erase_addr = (FLASH_SIZE >> 1) - (uint32_t)(FLASH_SECTOR_SIZE * saves / 16) - 1;
+            uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * ((saves / 16) + 1));
 
             uint32_t ints = save_and_disable_interrupts();
             flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
@@ -346,7 +345,7 @@ uint32_t saveData(packet data)
         //Después de borrar (si fue necesario), guardamos el buffer en memoria
         printf("Writing buffer %d\n", saves);
         sleep_ms(100);
-        uint32_t prog_addr = (FLASH_SIZE >> 1) - (FLASH_PAGE_SIZE * saves);
+        uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * saves);
 
         uint32_t ints = save_and_disable_interrupts();
         flash_range_program(prog_addr, (uint8_t*)(buffer_flash), FLASH_PAGE_SIZE);
