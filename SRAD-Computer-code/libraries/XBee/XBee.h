@@ -3,10 +3,20 @@
 
 #include "math.h"
 #include <stdint.h>
+#include <stdio.h>
+#include "hardware/uart.h"
 
 #define SIZE_PARAM (6) // 6 bytes for each parameter
 #define CANT_PARAM (13) // 12 parameters
 #define PKT_SIZE (CANT_PARAM * SIZE_PARAM) 
+
+typedef struct {
+    uart_inst_t * uart_id = uart1;
+    uint32_t baud_rate = 115200;
+    uint8_t stop_bit = 1; 
+    uint8_t data_bits = 8;
+    uart_parity_t parity = UART_PARITY_NONE;
+} xbee_uart_cfg_t;
 
 // PACKET SHAPE: 
 // <MISSION_TIME>,<PACKET_COUNT>,<STATUS>,<ALTITUDE>,<TILT>, <GPS_LATITUDE>,<GPS_LONGITUDE>,<GPS_ALTITUDE>,<ACCELERATION>,<TEMPERATURE>,<BATTERY_VOLTAGE>
@@ -50,6 +60,31 @@ typedef enum {
 
 class XBee 
 {
+    public:
+        XBee(xbee_uart_cfg_t cfg, uint32_t time = 0);
+        ~XBee();
+        
+        void setMissionTime(uint32_t time);
+        void setPacketCount();
+        void setStatus(MissionStatus_t m_status);
+        void setBatteryVoltage(char voltage); 
+        
+        void setIMUAcceleration(char acceleration);
+        void setIMUTilt(float tilt);
+        
+        void setGNSSTime(uint8_t hour, uint8_t minute, uint8_t second);
+        void setGNSSAltitude(int32_t altitude, int32_t altitudeMSL);
+        void setGNSSLatitude(int32_t latitude);
+        void setGNSSLongitude(int32_t longitude);
+        // TODO: add satellite count
+        
+        void setBMEPressure(float pressure);
+        void setBMETemperature(float temperature);
+        void setBMEAltitude(float altitude);
+        
+        void parseMsg(packet_index_t packet, dPoint_t d_point = DPOINT_NONE);
+        void sendPkt(packet_index_t packet);
+        
     private:
         char pkt[CANT_PARAM][SIZE_PARAM] = {0};
         char * ptr_pkt = &pkt[0][0];
@@ -58,7 +93,7 @@ class XBee
         char * ptr_packet_count = ptr_pkt + (SIZE_PARAM *  PACKET_COUNT);
         char * ptr_status = ptr_pkt + (SIZE_PARAM *  STATUS);
         char * ptr_battery_voltage = ptr_pkt + (SIZE_PARAM * BATTERY_VOLTAGE);
-
+    
         char * ptr_acceleration = ptr_pkt + (SIZE_PARAM * IMU_ACCELERATION);
         char * ptr_tilt = ptr_pkt + (SIZE_PARAM * IMU_TILT);
         
@@ -70,8 +105,8 @@ class XBee
         char * ptr_pressure = ptr_pkt + (SIZE_PARAM * BME_PRESSURE);
         char * ptr_altitude = ptr_pkt + (SIZE_PARAM * BME_ALTITUDE);
         char * ptr_temperature = ptr_pkt + (SIZE_PARAM * BME_TEMPERATURE);
-
-        char start_time;
+    
+        uint32_t start_time;
         
         // Dont know if i need the actual values, just in case
         uint32_t mission_time;
@@ -81,16 +116,16 @@ class XBee
         
         uint32_t imu_acceleration;
         uint32_t imu_tilt;
-
+    
         uint32_t gnss_time;
         uint32_t gnss_altitude;
         uint32_t gnss_latitude;
         uint32_t gnss_longitude;
-
+    
         uint32_t bme_pressure;
         uint32_t bme_altitude;
         uint32_t bme_temperature;
-
+    
         void* data_arr[CANT_PARAM] = {
             &mission_time,
             &packet_count,
@@ -110,30 +145,6 @@ class XBee
             &bme_temperature,
         };
 
-    public:
-        XBee(long time);
-        ~XBee();
-
-        void setMissionTime(long time);
-        void setPacketCount();
-        void setStatus(MissionStatus_t m_status);
-        void setBatteryVoltage(char voltage); 
-        
-        void setIMUAcceleration(char acceleration);
-        void setIMUTilt(float tilt);
-        
-        void setGNSSTime(uint32_t time);
-        void setGNSSAltitude(int32_t altitude, int32_t altitudeMSL);
-        void setGNSSLatitude(int32_t latitude);
-        void setGNSSLongitude(int32_t longitude);
-        // TODO: add satellite count
-
-        void setBMEPressure(float pressure);
-        void setBMETemperature(float temperature);
-        void setBMEAltitude(float altitude);
-
-        void parseMsg(packet_index_t packet, dPoint_t d_point = DPOINT_NONE);
-        void sendPkt();
-};
+};    
 
 #endif // XBEE_H

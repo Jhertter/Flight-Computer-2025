@@ -648,7 +648,7 @@ bool SFE_UBLOX_GNSS::begin(i2c_inst_t &i2cPort, uint8_t deviceAddress, uint16_t 
     // New in v2.0: allocate memory for the packetCfg payload here - if required. (The user may have called setPacketCfgPayloadSize already)
     if (packetCfgPayloadSize == 0)
     {
-        printf("begin: packetCfgPayloadSize is zero.\n");
+        // printf("begin: packetCfgPayloadSize is zero.\n");
         setPacketCfgPayloadSize(MAX_PAYLOAD_SIZE);
     }
 
@@ -13356,11 +13356,11 @@ bool SFE_UBLOX_GNSS::getPortSettingsInternal(uint8_t portID, uint16_t maxWait)
     sfe_ublox_status_e result = sendCommand(&packetCfg, maxWait);
     bool retVal = false;
 
-    printf("getPortSettingsInternal: result = %d\n", result);
-    printf("getPortSettingsInternal: packetCfg.cls = %d\n", packetCfg.cls);
-    printf("getPortSettingsInternal: packetCfg.id = %d\n", packetCfg.id);
-    printf("getPortSettingsInternal: packetCfg.len = %d\n", packetCfg.len);
-    printf("getPortSettingsInternal: packetCfg.startingSpot = %d\n", packetCfg.startingSpot);
+    // printf("getPortSettingsInternal: result = %d\n", result);
+    // printf("getPortSettingsInternal: packetCfg.cls = %d\n", packetCfg.cls);
+    // printf("getPortSettingsInternal: packetCfg.id = %d\n", packetCfg.id);
+    // printf("getPortSettingsInternal: packetCfg.len = %d\n", packetCfg.len);
+    // printf("getPortSettingsInternal: packetCfg.startingSpot = %d\n", packetCfg.startingSpot);
 
     if (result == SFE_UBLOX_STATUS_DATA_RECEIVED)
         retVal = true;

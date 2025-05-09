@@ -1,7 +1,12 @@
 #include "XBee.h"
 
-XBee::XBee(long time)
+XBee::XBee(xbee_uart_cfg_t cfg, uint32_t time)
 {
+    // Initialize UART
+    uart_init(cfg.uart_id, cfg.baud_rate);
+    uart_set_hw_flow(cfg.uart_id, false, false);
+    uart_set_format(cfg.uart_id, cfg.data_bits, cfg.stop_bit, cfg.parity);
+
     start_time = time;
     mission_time = 0;
     packet_count = 0;;
@@ -31,7 +36,7 @@ XBee::~XBee()
  * 
  * @param time in ms 
  */
-void XBee::setMissionTime(long time)
+void XBee::setMissionTime(uint32_t time)
 {
     long delta = (time - start_time)/1000;
     static int delta_seg = 0, delta_min = 0, delta_h = 0;
@@ -71,9 +76,9 @@ void XBee::setIMUTilt(float tilt)
     imu_tilt = tilt;
 }
 
-void XBee::setGNSSTime(uint32_t time)
+void XBee::setGNSSTime(uint8_t hour, uint8_t minute, uint8_t second)
 {
-    gnss_time = time;
+    gnss_time = hour * 10000 + minute * 100 + second;
     parseMsg(GNSS_TIME);
 }
 
@@ -124,9 +129,14 @@ void XBee::setBMETemperature(float temperature)
     parseMsg(BME_TEMPERATURE, DPOINT_TWO);
 }
 
-void XBee::sendPkt()
+void XBee::sendPkt(packet_index_t packet)
 {
-    
+    for (int i=0; i<SIZE_PARAM; i++)
+    {
+        uart_putc(uart1, pkt[packet][i]);
+        printf("%c", pkt[packet][i]);
+    }
+    printf("\n");
 }
 
 /**
