@@ -77,7 +77,8 @@ typedef struct{
 } packet;
 
 #define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE/sizeof(packet)))
-#define FLASH_SIZE ((uint32_t)(16 * 1024 * 1024))
+#define FLASH_SIZE ((uint32_t)(16 * 1024 * 1024)) //tamaño en bytes de la flash
+#define FLASH_CODE_END ((uint32_t)(XIP_BASE + FLASH_OFFSET)) //Hardcodear cuando tengamos el código final
 
 packet parameters;
 packet test;
@@ -310,41 +311,40 @@ Función que guarda estructuras en un buffer, y cuando este se llena, guarda est
 buffer en memoria flash.
 Recibe: La estructura con los datos actuales del sistema (Posición, altura, etc)
 Devuelve: La cantidad de veces que se escribió un sector en memoria
+
+Si se quedó sin memoria, va a devolver siempre la misma cantidad de veces que se
+guardó en el buffer la estructura, pero no se va a poder guardar más información.
+En este caso, todo lo que esté en el buffer, se va a perder si se apaga el sistema.
 */
 uint32_t saveData(packet data)
 {
     static uint8_t buff_count = 0;
     static uint32_t saves = 0;
-
-    printf("Saving data...\n");
-    sleep_ms(100);
-    printf("Buffer count: %d    ", buff_count);
-    sleep_ms(100);
-    printf("Saves: %d\n", saves);
-    sleep_ms(100);
+    static bool out_of_memory = false;
 
     if(buff_count < BUFFER_SIZE)
     {
         buffer_flash[buff_count] = data;
         buff_count++;
     }
-    else
+    else if(!out_of_memory) //Si el buffer se llenó y no se quedó sin memoria
     {
         //La idea es borrar los sectores a medida que necesitemos. Entran 16 páginas 
         //(escrituras), por lo que cada 16 iteraciones borramos el siguiente sector
         if(saves % 16 == 0) 
         {
-            printf("Erasing sector %d\n", saves / 16);
-            sleep_ms(100);
             uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * ((saves / 16) + 1));
+            if(erase_addr <= FLASH_CODE_END) //No borrar el sector de código
+            {
+                out_of_memory = true;
+                return saves;
+            }
 
             uint32_t ints = save_and_disable_interrupts();
             flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
             restore_interrupts (ints);
         }
         //Después de borrar (si fue necesario), guardamos el buffer en memoria
-        printf("Writing buffer %d\n", saves);
-        sleep_ms(100);
         uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * saves);
 
         uint32_t ints = save_and_disable_interrupts();
@@ -356,4 +356,3 @@ uint32_t saveData(packet data)
     }
     return saves;
 } //TODO: Fijarse que no sobreescriba la sección de código (contemplar ese caso)
-    //TODO: hardcodear el archivo build/pico_flash_region.ld
