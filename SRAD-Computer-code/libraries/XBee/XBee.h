@@ -64,6 +64,8 @@ class XBee
     public:
         XBee(xbee_uart_cfg_t cfg, uint32_t time = 0);
         ~XBee();
+
+        void clearPkt(packet_index_t packet);
         
         void setMissionTime(uint32_t time);
         void setPacketCount();

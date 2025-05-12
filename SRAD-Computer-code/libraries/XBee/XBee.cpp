@@ -156,10 +156,22 @@ void XBee::sendPkt(packet_index_t packet)
  */
 void XBee::parseMsg(packet_index_t packet, dPoint_t d_point)
 {
+    clearPkt(packet);
+
     int module = 0;
-    
-    uint32_t data = (*((uint32_t*)(data_arr[packet])));
-    
+    bool negative = false;
+
+    module = (*((int32_t*)(data_arr[packet])));
+    uint32_t data = 0;
+
+    if (module < 0)
+    {
+        negative = true;
+        data = (uint32_t)(-module);
+    }
+    else
+        data = (*((uint32_t*)(data_arr[packet])));
+
     // Checks if param has decimal places
     if (d_point == DPOINT_TWO)
     {
@@ -181,4 +193,13 @@ void XBee::parseMsg(packet_index_t packet, dPoint_t d_point)
         else
             data *= 0.1;
     }
+
+    if (negative)
+        pkt[packet][0] = '-';
+}
+
+void XBee::clearPkt(packet_index_t packet)
+{
+    for (int i=0; i<SIZE_PARAM; i++)
+        pkt[packet][i] = 0;
 }
