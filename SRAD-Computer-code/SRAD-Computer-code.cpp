@@ -368,6 +368,7 @@ void readData(uint32_t n_pages)
         for(uint8_t i = 0; i < BUFFER_SIZE; i++) //este for mandaría todas las estructuras, una por una, por el puerto serie
         {
             fwrite(data_ptr, sizeof(packet), 1, stdout); //TODO: a checkear que ande
+            printf("Packet %d: \n", i);
         }
     }
 }
