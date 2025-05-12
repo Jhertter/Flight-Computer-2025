@@ -8,22 +8,24 @@ XBee::XBee(xbee_uart_cfg_t cfg, uint32_t time)
     uart_set_format(cfg.uart_id, cfg.data_bits, cfg.stop_bit, cfg.parity);
 
     start_time = time;
-    mission_time = 0;
-    packet_count = 0;;
-    status = PRE_LAUNCH;
-    battery_voltage = 0;
+    // mission_time = 0;
+    // packet_count = 0;;
+    // status = PRE_LAUNCH;
+    // battery_voltage = 0;
 
-    imu_acceleration = 0;
-    imu_tilt = 0;
+    // imu_acceleration = 0;
+    // imu_roll = 0;
+    // imu_pitch = 0;
+    // // imu_tilt = 0;
     
-    gnss_time = 0;
-    gnss_latitude = 0;
-    gnss_longitude = 0;
-    gnss_altitude = 0;
+    // gnss_time = 0;
+    // gnss_latitude = 0;
+    // gnss_longitude = 0;
+    // gnss_altitude = 0;
 
-    bme_pressure = 0;
-    bme_altitude = 0;
-    bme_temperature = 0;
+    // bme_pressure = 0;
+    // bme_altitude = 0;
+    // bme_temperature = 0;
 }
 
 XBee::~XBee()
@@ -71,9 +73,16 @@ void XBee::setIMUAcceleration(char acceleration)
     imu_acceleration = acceleration;
 }
 
-void XBee::setIMUTilt(float tilt)
+void XBee::setIMUPitch(int16_t pitch)
 {
-    imu_tilt = tilt;
+    imu_pitch = pitch;
+    parseMsg(IMU_PITCH, DPOINT_ONE);
+}
+
+void XBee::setIMURoll(int16_t roll)
+{
+    imu_roll = roll;
+    parseMsg(IMU_ROLL, DPOINT_ONE);
 }
 
 void XBee::setGNSSTime(uint8_t hour, uint8_t minute, uint8_t second)
@@ -136,7 +145,7 @@ void XBee::sendPkt(packet_index_t packet)
         uart_putc(uart1, pkt[packet][i]);
         printf("%c", pkt[packet][i]);
     }
-    printf("\n");
+    printf(" ");
 }
 
 /**
@@ -154,12 +163,12 @@ void XBee::parseMsg(packet_index_t packet, dPoint_t d_point)
     // Checks if param has decimal places
     if (d_point == DPOINT_TWO)
     {
-        data *= 100;
+        // data *= 100;
         d_point = DPOINT_TWO;
     }
     else if (d_point == DPOINT_ONE)
     {
-        data *= 10;
+        // data *= 10;
         d_point = DPOINT_ONE;
     }
         
@@ -168,10 +177,8 @@ void XBee::parseMsg(packet_index_t packet, dPoint_t d_point)
         module = ((int)(data))%10;
         pkt[packet][SIZE_PARAM-1-i] = module + '0';
         if (i == d_point)
-        {
             pkt[packet][SIZE_PARAM-1-i] = '.';
-            i++;
-        }
-        data *= 0.1;
+        else
+            data *= 0.1;
     }
 }

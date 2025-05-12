@@ -7,7 +7,7 @@
 #include "hardware/uart.h"
 
 #define SIZE_PARAM (6) // 6 bytes for each parameter
-#define CANT_PARAM (13) // 12 parameters
+#define CANT_PARAM (14) // 12 parameters
 #define PKT_SIZE (CANT_PARAM * SIZE_PARAM) 
 
 typedef struct {
@@ -30,13 +30,13 @@ typedef enum {
     LANDING,
     RECOVERY,
     COMPLETE,
-    FAILED
+    FAILED,
 } MissionStatus_t;
 
 typedef enum {
     DPOINT_NONE = -1,
-    DPOINT_ONE = 0,
-    DPOINT_TWO = 1
+    DPOINT_ONE = 1,
+    DPOINT_TWO = 2,
 } dPoint_t;
 
 typedef enum {
@@ -46,7 +46,8 @@ typedef enum {
     BATTERY_VOLTAGE,
 
     IMU_ACCELERATION,
-    IMU_TILT,
+    IMU_ROLL,
+    IMU_PITCH,
 
     GNSS_TIME,
     GNSS_LATITUDE,
@@ -70,7 +71,8 @@ class XBee
         void setBatteryVoltage(char voltage); 
         
         void setIMUAcceleration(char acceleration);
-        void setIMUTilt(float tilt);
+        void setIMURoll(int16_t roll);
+        void setIMUPitch(int16_t pitch);
         
         void setGNSSTime(uint8_t hour, uint8_t minute, uint8_t second);
         void setGNSSAltitude(int32_t altitude, int32_t altitudeMSL);
@@ -95,7 +97,8 @@ class XBee
         char * ptr_battery_voltage = ptr_pkt + (SIZE_PARAM * BATTERY_VOLTAGE);
     
         char * ptr_acceleration = ptr_pkt + (SIZE_PARAM * IMU_ACCELERATION);
-        char * ptr_tilt = ptr_pkt + (SIZE_PARAM * IMU_TILT);
+        char * ptr_roll = ptr_pkt + (SIZE_PARAM * IMU_ROLL);
+        char * ptr_pitch = ptr_pkt + (SIZE_PARAM * IMU_PITCH);
         
         char * ptr_gnss_time = ptr_pkt + (SIZE_PARAM * GNSS_TIME);
         char * ptr_gnss_latitude = ptr_pkt + (SIZE_PARAM * GNSS_LATITUDE); 
@@ -109,22 +112,23 @@ class XBee
         uint32_t start_time;
         
         // Dont know if i need the actual values, just in case
-        uint32_t mission_time;
-        uint16_t packet_count;
-        uint8_t battery_voltage;
-        uint16_t status;
+        uint32_t mission_time = 0;
+        uint16_t packet_count = 0;
+        uint8_t battery_voltage = 0;
+        uint16_t status = PRE_LAUNCH;
         
-        uint32_t imu_acceleration;
-        uint32_t imu_tilt;
+        uint32_t imu_acceleration = 0;
+        int32_t imu_roll = 0;
+        int32_t imu_pitch = 0;
     
-        uint32_t gnss_time;
-        uint32_t gnss_altitude;
-        uint32_t gnss_latitude;
-        uint32_t gnss_longitude;
+        uint32_t gnss_time = 0;
+        uint32_t gnss_altitude = 0;
+        uint32_t gnss_latitude = 0;
+        uint32_t gnss_longitude = 0;
     
-        uint32_t bme_pressure;
-        uint32_t bme_altitude;
-        uint32_t bme_temperature;
+        uint32_t bme_pressure = 0;
+        uint32_t bme_altitude = 0;
+        uint32_t bme_temperature = 0;
     
         void* data_arr[CANT_PARAM] = {
             &mission_time,
@@ -133,7 +137,8 @@ class XBee
             &battery_voltage,
             
             &imu_acceleration,
-            &imu_tilt,
+            &imu_roll,
+            &imu_pitch,
             
             &gnss_time,
             &gnss_latitude,
