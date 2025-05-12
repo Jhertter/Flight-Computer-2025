@@ -92,19 +92,20 @@ void init_leds();
 
 packet buffer_flash[BUFFER_SIZE] = {0};
 uint32_t saveData(packet data);
+void readData(uint32_t n_buffers);
 
 int main()
 {
-    test.altitude = 99;
-    test.altitude_MSL = 48;
+    test.altitude = 0xAAAAAAAA;
+    test.altitude_MSL = 0xBBBBBBBB;
     test.altitudeBME = 1.5f;
-    test.GNSS_time = 33;
-    test.imu_acceleration = 100;
-    test.imu_tilt = 87;
-    test.latitude = 66;
-    test.longitude = 77;
+    test.GNSS_time = 0xCCCCCCCC;
+    test.imu_acceleration = 0xDDDDDDDD;
+    test.imu_tilt = 0xEEEEEEEE;
+    test.latitude = 0xFFFFFFFF;
+    test.longitude = 0x11111111;
     test.pressure = 88;
-    test.satellite_count = 5;
+    test.satellite_count = 0x9;
     test.temperature = 34;
     
     stdio_init_all();
@@ -187,43 +188,43 @@ int main()
     {
         saveData(test);
     }
-
-    packet* test_ptr = (packet*)(XIP_BASE + (FLASH_SIZE) - FLASH_PAGE_SIZE);
-    for(uint8_t j = 0; j < 19; j++)
-    {
-        if(j % BUFFER_SIZE == 0)
-        {
-            test_ptr = (packet*)((FLASH_SIZE) - FLASH_PAGE_SIZE - FLASH_PAGE_SIZE * j/BUFFER_SIZE);
-        }
-        printf("Packet %d: ", j);
-        printf("Packet %d: ", test_ptr->GNSS_time);
-        printf("Lat: %ld - ", test_ptr->latitude);
-        printf("Long: %ld - ", test_ptr->longitude);
-        printf("Alt: %d (mm) - ", test_ptr->altitude);
-        printf("AltMSL: %d (mm) - ", test_ptr->altitude_MSL);
-        printf("Pressure: %f (hPa) - ", test_ptr->pressure/100);
-        printf("Temperature: %f (C) - ", test_ptr->temperature);
-        printf("Alt BME: %f (m)\n", test_ptr->altitudeBME);
-        test_ptr += j;
-    }
+    readData(1);
+    // packet* test_ptr = (packet*)(XIP_BASE + (FLASH_SIZE) - FLASH_PAGE_SIZE);
+    // for(uint8_t j = 0; j < 19; j++)
+    // {
+    //     if(j % BUFFER_SIZE == 0)
+    //     {
+    //         test_ptr = (packet*)((FLASH_SIZE) - FLASH_PAGE_SIZE - FLASH_PAGE_SIZE * j/BUFFER_SIZE);
+    //     }
+    //     printf("Packet %d: ", j);
+    //     printf("Packet %d: ", test_ptr->GNSS_time);
+    //     printf("Lat: %ld - ", test_ptr->latitude);
+    //     printf("Long: %ld - ", test_ptr->longitude);
+    //     printf("Alt: %d (mm) - ", test_ptr->altitude);
+    //     printf("AltMSL: %d (mm) - ", test_ptr->altitude_MSL);
+    //     printf("Pressure: %f (hPa) - ", test_ptr->pressure/100);
+    //     printf("Temperature: %f (C) - ", test_ptr->temperature);
+    //     printf("Alt BME: %f (m)\n", test_ptr->altitudeBME);
+    //     test_ptr += j;
+    // }
 
     while (true)
     {
-        static long lastTime = 0;
-        static char byte = 0;
+        // static long lastTime = 0;
+        // static char byte = 0;
 
-        if (to_ms_since_boot(get_absolute_time()) - lastTime > 500)
-        {
-            lastTime = to_ms_since_boot(get_absolute_time()); // Update the timer
+        // if (to_ms_since_boot(get_absolute_time()) - lastTime > 500)
+        // {
+        //     lastTime = to_ms_since_boot(get_absolute_time()); // Update the timer
 
-            xbee.setMissionTime(to_ms_since_boot(get_absolute_time()));
-            xbee.setGNSSTime(GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
-            xbee.setGNSSLatitude(GNSS.getLatitude());
+        //     xbee.setMissionTime(to_ms_since_boot(get_absolute_time()));
+        //     xbee.setGNSSTime(GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
+        //     xbee.setGNSSLatitude(GNSS.getLatitude());
 
-            xbee.sendPkt(MISSION_TIME);
-            // xbee.sendPkt(GNSS_LATITUDE);
-            // xbee.sendPkt(GNSS_TIME);
-        }
+        //     xbee.sendPkt(MISSION_TIME);
+        //     // xbee.sendPkt(GNSS_LATITUDE);
+        //     // xbee.sendPkt(GNSS_TIME);
+        // }
     }
 }
 
@@ -355,4 +356,18 @@ uint32_t saveData(packet data)
         buff_count = 0;
     }
     return saves;
-} //TODO: Fijarse que no sobreescriba la sección de código (contemplar ese caso)
+}
+
+void readData(uint32_t n_pages)
+{
+    static packet* data_ptr = (packet*)(XIP_BASE + (FLASH_SIZE) - FLASH_PAGE_SIZE);
+
+    packet data[BUFFER_SIZE] = {0};
+    for(uint32_t j = 0; j < n_pages; j++)
+    {
+        for(uint8_t i = 0; i < BUFFER_SIZE; i++) //este for mandaría todas las estructuras, una por una, por el puerto serie
+        {
+            fwrite(data_ptr, sizeof(packet), 1, stdout); //TODO: a checkear que ande
+        }
+    }
+}
