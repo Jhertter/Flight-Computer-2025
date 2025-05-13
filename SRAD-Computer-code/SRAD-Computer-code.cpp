@@ -13,7 +13,7 @@
 #include "libraries/bmp_280/bmp280.h"
 #include "libraries/XBee/XBee.h"
 
-#define PRINT_DEBUG_PKT 1
+#define PRINT_DEBUG_PKT 0
 
 #define I2C_FREQUENCY 100000
 
@@ -73,15 +73,10 @@ typedef struct
     int32_t gnss_altitude = 0;
     int32_t gnss_altitude_MSL = 0;
 
-    // uint32_t imu_x_acceleration = 0;
-    // uint32_t imu_y_acceleration = 0;
-    // uint32_t imu_z_acceleration = 0;
     int16_t imu_roll = 0;
     int16_t imu_pitch = 0;
     int32_t imu_xvel = 0;
     int32_t imu_yvel = 0;
-    // uint32_t imu_zvel = 0;
-    // uint32_t imu_tilt = 0;
 } packet;
 
 #define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE / sizeof(packet)))
@@ -90,9 +85,9 @@ typedef struct
 packet parameters;
 // packet test;
 
-// bool read_data(repeating_timer_t *rt);
 void read_data();
-void q2e(madgwick_ahrs_t *data, float euler[]);
+void update_xbee_parameters(uint32_t last_time);
+
 void read_imu();
 void read_gnss();
 void read_bme();
@@ -131,15 +126,13 @@ int main()
     gpio_toggle(PIN_LED_ALTITUDE);
 
     icm20948_cal_gyro(&IMU_config, &data.gyro_bias[0]);
-    // printf("calibrated gyro: %d %d %d\n", data.gyro_bias[0], data.gyro_bias[1], data.gyro_bias[2]);
 
     icm20948_cal_accel(&IMU_config, &data.accel_bias[0]);
-    // printf("calibrated accel: %d %d %d\n", data.accel_bias[0], data.accel_bias[1], data.accel_bias[2]);
 
     // Initialize BME280
     if (BME.begin(0x76, 0x60) == false)
     {
-        printf("ESU not detected at default I2C address. Freezing.");
+        printf("BME not detected at default I2C address. Freezing.");
         gpio_put(PIN_LED_ERROR, 1);
         while (1)
             ;
@@ -171,37 +164,12 @@ int main()
             last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
             read_data();
-
-            // Mission data
-            xbee.setMissionTime(last_time);
-            // xbee.setPacketCount();
-            // xbee.setBatteryVoltage(parameters.battery_voltage);
-
-            // xbee.setIMUAcceleration();
-            xbee.setIMURoll(parameters.imu_roll);
-            xbee.setIMUPitch(parameters.imu_pitch);
-
-            // // GNSS data
-            printf("%d - ", parameters.satellite_count);
-            if (parameters.satellite_count > 0)
-            {
-                xbee.setGNSSTime(GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
-                xbee.setGNSSLatitude(parameters.gnss_latitude);
-                xbee.setGNSSLongitude(parameters.gnss_longitude);
-                xbee.setGNSSAltitude(parameters.gnss_altitude, parameters.gnss_altitude_MSL);
-            }
+            update_xbee_parameters(last_time);
 
 #if PRINT_DEBUG_PKT
-            // ESU data
-            xbee.setBMEPressure(parameters.bme_pressure);
-            xbee.setBMEAltitude(parameters.bme_altitude);
-            xbee.setBMETemperature(parameters.bme_temperature);
-
-            // IMU data
-            // xbee.setIMUAcceleration(data.accel_raw[0]);
-            // xbee.setIMUTilt(data.gyro_raw[0]);
-
             // Send data -> this format is just for testing
+            printf("%d - ", parameters.satellite_count);
+            
             xbee.sendPkt(MISSION_TIME);
             // xbee.sendPkt(PACKET_COUNT);
             // xbee.sendPkt(STATUS);
@@ -245,6 +213,36 @@ void gpio_toggle(int pin)
         gpio_put(pin, 1);
 }
 
+void update_xbee_parameters(uint32_t last_time)
+{
+    // Mission data
+    xbee.setMissionTime(last_time);
+    // xbee.setPacketCount();
+    // xbee.setBatteryVoltage(parameters.battery_voltage);
+
+    // xbee.setIMUAcceleration();
+    xbee.setIMURoll(parameters.imu_roll);
+    xbee.setIMUPitch(parameters.imu_pitch);
+
+    // // GNSS data
+    if (parameters.satellite_count > 0)
+    {
+        xbee.setGNSSTime(GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
+        xbee.setGNSSLatitude(parameters.gnss_latitude);
+        xbee.setGNSSLongitude(parameters.gnss_longitude);
+        xbee.setGNSSAltitude(parameters.gnss_altitude, parameters.gnss_altitude_MSL);
+    }
+    
+    // ESU data
+    xbee.setBMEPressure(parameters.bme_pressure);
+    xbee.setBMEAltitude(parameters.bme_altitude);
+    xbee.setBMETemperature(parameters.bme_temperature);
+    
+    // IMU data
+    // xbee.setIMUAcceleration(data.accel_raw[0]);
+    // xbee.setIMUTilt(data.gyro_raw[0]);
+}
+
 // bool read_data(repeating_timer_t *rt)
 void read_data()
 {
@@ -260,6 +258,7 @@ void read_data()
 }
 
 #define RAD_TO_DEG (180.0f / 3.14159265358979323846f)
+#define DEG_TO_RAD (1/RAD_TO_DEG)
 #define GRAVITY (9.80665f)
 #define IMU_SAMPLING_RATE (25.0f) // Hz
 
@@ -284,8 +283,8 @@ void read_imu()
 
     parameters.imu_xvel += (int16_t)(accel_g[0] / IMU_SAMPLING_RATE * 1000);
     parameters.imu_yvel += (int16_t)(accel_g[1] / IMU_SAMPLING_RATE * 1000);
-    parameters.imu_roll = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
-    parameters.imu_pitch = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
+    parameters.imu_roll = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
+    parameters.imu_pitch = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
 }
 
 void read_gnss()
@@ -309,7 +308,7 @@ void read_bme()
     parameters.bme_temperature = (uint32_t)(BME.readTemperature() * 100);
 }
 
-void init_leds() // jajajjajajaja que estas escuchando
+void init_leds()
 {
     for (int i = 0; i < gpio_size; i++)
     {
@@ -328,6 +327,7 @@ void init_leds() // jajajjajajaja que estas escuchando
         sleep_ms(100);
     }
 }
+
 /*
 Función que guarda estructuras en un buffer, y cuando este se llena, guarda este
 buffer en memoria flash.

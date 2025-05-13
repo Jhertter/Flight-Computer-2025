@@ -68,9 +68,10 @@ void XBee::setBatteryVoltage(char voltage)
     battery_voltage = voltage;
 }
 
-void XBee::setIMUAcceleration(char acceleration)
+void XBee::setIMUYVel(uint32_t vel)
 {
-    imu_acceleration = acceleration;
+    imu_y_vel = vel;
+    parseMsg(IMU_Y_VEL);
 }
 
 void XBee::setIMUPitch(int16_t pitch)

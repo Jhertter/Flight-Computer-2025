@@ -45,7 +45,7 @@ typedef enum {
     STATUS,
     BATTERY_VOLTAGE,
 
-    IMU_ACCELERATION,
+    IMU_Y_VEL,
     IMU_ROLL,
     IMU_PITCH,
 
@@ -72,7 +72,7 @@ class XBee
         void setStatus(MissionStatus_t m_status);
         void setBatteryVoltage(char voltage); 
         
-        void setIMUAcceleration(char acceleration);
+        void setIMUYVel(uint32_t vel);
         void setIMURoll(int16_t roll);
         void setIMUPitch(int16_t pitch);
         
@@ -98,7 +98,7 @@ class XBee
         char * ptr_status = ptr_pkt + (SIZE_PARAM *  STATUS);
         char * ptr_battery_voltage = ptr_pkt + (SIZE_PARAM * BATTERY_VOLTAGE);
     
-        char * ptr_acceleration = ptr_pkt + (SIZE_PARAM * IMU_ACCELERATION);
+        char * ptr_y_vel = ptr_pkt + (SIZE_PARAM * IMU_Y_VEL);
         char * ptr_roll = ptr_pkt + (SIZE_PARAM * IMU_ROLL);
         char * ptr_pitch = ptr_pkt + (SIZE_PARAM * IMU_PITCH);
         
@@ -119,7 +119,7 @@ class XBee
         uint8_t battery_voltage = 0;
         uint16_t status = PRE_LAUNCH;
         
-        uint32_t imu_acceleration = 0;
+        uint32_t imu_y_vel = 0;
         int32_t imu_roll = 0;
         int32_t imu_pitch = 0;
     
@@ -138,7 +138,7 @@ class XBee
             &status,
             &battery_voltage,
             
-            &imu_acceleration,
+            &imu_y_vel,
             &imu_roll,
             &imu_pitch,
             
