@@ -13459,7 +13459,7 @@
 		)
 		(uuid "66fc27ea-b4a3-4938-b64f-881c8a638362")
 	)
-	(label "UART_Tx"
+	(label "UART_Rx"
 		(at 298.45 195.58 0)
 		(effects
 			(font
@@ -13859,7 +13859,7 @@
 		)
 		(uuid "d31f2582-b3da-453d-bc41-6fe492086326")
 	)
-	(label "UART_Rx"
+	(label "UART_Tx"
 		(at 298.45 193.04 0)
 		(effects
 			(font
@@ -18410,7 +18410,7 @@
 				)
 			)
 		)
-		(property "Footprint" "my_lib:503398-1892-1"
+		(property "Footprint" "my_lib:693071010811"
 			(at 201.93 260.02 0)
 			(effects
 				(font
