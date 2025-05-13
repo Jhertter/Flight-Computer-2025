@@ -159,11 +159,11 @@ int main()
     {
         static uint32_t last_time = 0;
 
-        if (to_ms_since_boot(get_absolute_time()) - last_time > 100)
+        read_data();
+        if (to_ms_since_boot(get_absolute_time()) - last_time > 40)
         {
             last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
-            read_data();
             update_xbee_parameters(last_time);
 
 #if PRINT_DEBUG_PKT
@@ -249,7 +249,7 @@ void read_data()
     static uint8_t times = 0;
 
     read_imu();
-    read_bme();
+    // read_bme();
 
     // if ((times % 7) == 0)
     //     read_gnss();
@@ -285,6 +285,21 @@ void read_imu()
     parameters.imu_yvel += (int16_t)(accel_g[1] / IMU_SAMPLING_RATE * 1000);
     parameters.imu_roll = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
     parameters.imu_pitch = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
+
+    static float accel_y = 0;
+    static float prev_accel_y = 0;
+
+    static float vel_y = 0;
+    static float prev_vel_y = 0;
+
+    accel_y = (accel_g[1] - cos((90 - parameters.imu_pitch / 10) * DEG_TO_RAD)) * GRAVITY; // m/s^2
+
+    vel_y = prev_vel_y + 0.5 * (accel_y + prev_accel_y) * GRAVITY * (1/IMU_SAMPLING_RATE);
+    prev_vel_y = vel_y;
+    prev_accel_y = accel_y;
+
+    printf("Accel y: %+2.3f(m/s^2) - ", accel_y);
+    printf("Vel y: %2.3f(m/s)\n", vel_y);
 }
 
 void read_gnss()
