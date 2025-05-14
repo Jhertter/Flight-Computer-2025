@@ -9,6 +9,7 @@
 #define SIZE_PARAM (6) // 6 bytes for each parameter
 #define CANT_PARAM (14) // 12 parameters
 #define PKT_SIZE (CANT_PARAM * SIZE_PARAM) 
+#define PKT_TERMINATOR ('\n') // '\n' terminator
 
 typedef struct {
     uart_inst_t * uart_id = uart1;
@@ -87,33 +88,16 @@ class XBee
         void setBMEAltitude(float altitude);
         
         void parseMsg(packet_index_t packet, dPoint_t d_point = DPOINT_NONE);
-        void sendPkt(packet_index_t packet);
+        void sendParameter(packet_index_t packet);
+        void sendPkt();
         
     private:
-        char pkt[CANT_PARAM][SIZE_PARAM] = {0};
-        char * ptr_pkt = &pkt[0][0];
-        
-        char * ptr_mission_time = ptr_pkt + (SIZE_PARAM *  MISSION_TIME);
-        char * ptr_packet_count = ptr_pkt + (SIZE_PARAM *  PACKET_COUNT);
-        char * ptr_status = ptr_pkt + (SIZE_PARAM *  STATUS);
-        char * ptr_battery_voltage = ptr_pkt + (SIZE_PARAM * BATTERY_VOLTAGE);
-    
-        char * ptr_y_vel = ptr_pkt + (SIZE_PARAM * IMU_Y_VEL);
-        char * ptr_roll = ptr_pkt + (SIZE_PARAM * IMU_ROLL);
-        char * ptr_pitch = ptr_pkt + (SIZE_PARAM * IMU_PITCH);
-        
-        char * ptr_gnss_time = ptr_pkt + (SIZE_PARAM * GNSS_TIME);
-        char * ptr_gnss_latitude = ptr_pkt + (SIZE_PARAM * GNSS_LATITUDE); 
-        char * ptr_gnss_longitude = ptr_pkt + (SIZE_PARAM * GNSS_LONGITUDE);
-        char * ptr_gnss_altitude = ptr_pkt + (SIZE_PARAM * GNSS_ALTITUDE); 
-        
-        char * ptr_pressure = ptr_pkt + (SIZE_PARAM * BME_PRESSURE);
-        char * ptr_altitude = ptr_pkt + (SIZE_PARAM * BME_ALTITUDE);
-        char * ptr_temperature = ptr_pkt + (SIZE_PARAM * BME_TEMPERATURE);
+        char pkt[PKT_SIZE + 1] = {0}; // +1 for the '\n' terminator
     
         uint32_t start_time;
+    
+        xbee_uart_cfg_t uart_cfg;
         
-        // Dont know if i need the actual values, just in case
         uint32_t mission_time = 0;
         uint16_t packet_count = 0;
         uint8_t battery_voltage = 0;

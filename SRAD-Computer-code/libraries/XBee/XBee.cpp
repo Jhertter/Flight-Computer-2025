@@ -2,30 +2,13 @@
 
 XBee::XBee(xbee_uart_cfg_t cfg, uint32_t time)
 {
+    uart_cfg = cfg;
     // Initialize UART
-    uart_init(cfg.uart_id, cfg.baud_rate);
-    uart_set_hw_flow(cfg.uart_id, false, false);
-    uart_set_format(cfg.uart_id, cfg.data_bits, cfg.stop_bit, cfg.parity);
+    uart_init(uart_cfg.uart_id, uart_cfg.baud_rate);
+    uart_set_hw_flow(uart_cfg.uart_id, false, false);
+    uart_set_format(uart_cfg.uart_id, uart_cfg.data_bits, uart_cfg.stop_bit, uart_cfg.parity);
 
     start_time = time;
-    // mission_time = 0;
-    // packet_count = 0;;
-    // status = PRE_LAUNCH;
-    // battery_voltage = 0;
-
-    // imu_acceleration = 0;
-    // imu_roll = 0;
-    // imu_pitch = 0;
-    // // imu_tilt = 0;
-    
-    // gnss_time = 0;
-    // gnss_latitude = 0;
-    // gnss_longitude = 0;
-    // gnss_altitude = 0;
-
-    // bme_pressure = 0;
-    // bme_altitude = 0;
-    // bme_temperature = 0;
 }
 
 XBee::~XBee()
@@ -61,11 +44,13 @@ void XBee::setPacketCount()
 void XBee::setStatus(MissionStatus_t m_status)
 {
     status = m_status;
+    parseMsg(STATUS);
 }
 
 void XBee::setBatteryVoltage(char voltage)
 {
     battery_voltage = voltage;
+    parseMsg(BATTERY_VOLTAGE);
 }
 
 void XBee::setIMUYVel(uint32_t vel)
@@ -101,6 +86,11 @@ void XBee::setGNSSAltitude(int32_t altitude, int32_t altitudeMSL)
     parseMsg(GNSS_ALTITUDE);
 }
 
+/**
+ * @brief Form
+ * 
+ * @param latitude 
+ */
 void XBee::setGNSSLatitude(int32_t latitude)
 {
     uint8_t deg = ABS(latitude)/10000000;
@@ -111,6 +101,11 @@ void XBee::setGNSSLatitude(int32_t latitude)
     parseMsg(GNSS_LATITUDE);
 }
 
+/**
+ * @brief Formats decimal degrees to degrees, minutes and seconds.
+ * 
+ * @param longitude 
+ */
 void XBee::setGNSSLongitude(int32_t longitude)
 {
     uint8_t deg = ABS(longitude)/10000000;
@@ -139,18 +134,36 @@ void XBee::setBMETemperature(float temperature)
     parseMsg(BME_TEMPERATURE, DPOINT_TWO);
 }
 
-void XBee::sendPkt(packet_index_t packet)
+void XBee::sendPkt()
+{
+    for (int i=0; i<PKT_SIZE; i++)
+    {
+        uart_putc(uart_cfg.uart_id , pkt[i]);
+        printf("%c", pkt[i]);
+    }
+    printf("\n");
+}
+
+/**
+ * @brief if needed to send a specific parameter, use this function
+ * 
+ * @param packet packet to send
+ */
+void XBee::sendParameter(packet_index_t packet)
 {
     for (int i=0; i<SIZE_PARAM; i++)
     {
-        uart_putc(uart1, pkt[packet][i]);
-        printf("%c", pkt[packet][i]);
+        uart_putc(uart_cfg.uart_id, pkt[packet*SIZE_PARAM + i]);
+        printf("%c", pkt[packet*SIZE_PARAM + i]);
     }
+    // uart_putc(uart_cfg.uart_id, '\n');
     printf(" ");
 }
 
 /**
- * @brief 
+ * @brief   Parses data to char array format. User should verify that the desired
+ *          significant figures fit (including decimal point and sign if needed)
+ *          fit in the SIZE_PARAM.
  * 
  * @param packet index of the parameter to parse. Use the enum packet_index_t
  * @param d_point if needed, some parameters can use decimal point 
@@ -173,34 +186,22 @@ void XBee::parseMsg(packet_index_t packet, dPoint_t d_point)
     else
         data = (*((uint32_t*)(data_arr[packet])));
 
-    // Checks if param has decimal places
-    if (d_point == DPOINT_TWO)
-    {
-        // data *= 100;
-        d_point = DPOINT_TWO;
-    }
-    else if (d_point == DPOINT_ONE)
-    {
-        // data *= 10;
-        d_point = DPOINT_ONE;
-    }
-        
     for (int i=0; i<SIZE_PARAM; i++)    
     {
         module = ((int)(data))%10;
-        pkt[packet][SIZE_PARAM-1-i] = module + '0';
+        pkt[packet*SIZE_PARAM + SIZE_PARAM-1-i] = module + '0';
         if (i == d_point)
-            pkt[packet][SIZE_PARAM-1-i] = '.';
+            pkt[packet*SIZE_PARAM + SIZE_PARAM-1-i] = '.';
         else
             data *= 0.1;
     }
 
     if (negative)
-        pkt[packet][0] = '-';
+        pkt[packet*SIZE_PARAM] = '-';
 }
 
 void XBee::clearPkt(packet_index_t packet)
 {
     for (int i=0; i<SIZE_PARAM; i++)
-        pkt[packet][i] = 0;
+        pkt[packet*SIZE_PARAM] = 0;
 }
