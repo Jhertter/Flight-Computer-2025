@@ -54,7 +54,11 @@ bool BMP280::begin(uint8_t addr, uint8_t chipid)
     }
 
     readCoefficients();
-    setSampling();
+    setSampling(MODE_NORMAL, // mode
+                SAMPLING_X2, // temperature
+                SAMPLING_X16, // pressure
+                FILTER_X16,
+                STANDBY_MS_1);   // filter
 
     return true;
 }

@@ -60,19 +60,20 @@ XBee xbee(uart_cfg, to_ms_since_boot(get_absolute_time()));
 
 const uint8_t *flashBase = (const uint8_t *)(XIP_BASE + FLASH_OFFSET);
 
+
 typedef struct
 {
     uint32_t bme_pressure = 0;
     uint32_t bme_temperature = 0;
     uint32_t bme_altitude = 0;
-
+    
     uint8_t satellite_count = 0;
     uint32_t gnss_time = 0;
     int32_t gnss_latitude = 0;  // latitude +-90ª
     int32_t gnss_longitude = 0; // longitude +-180ª
     int32_t gnss_altitude = 0;
     int32_t gnss_altitude_MSL = 0;
-
+    
     int16_t imu_roll = 0;
     int16_t imu_pitch = 0;
     int32_t imu_xvel = 0;
@@ -88,9 +89,12 @@ packet parameters;
 void read_data();
 void update_xbee_parameters(uint32_t last_time);
 
+void calibrate_bme(void);
+
 void read_imu();
 void read_gnss();
 void read_bme();
+static float ground_hP = 0;
 
 void gpio_toggle(int pin);
 void init_leds();
@@ -137,7 +141,11 @@ int main()
         while (1)
             ;
     }
+    calibrate_bme(); //Actualizamos la presión actual en el suelo, así calculamos la altura a partir de esto
+
     gpio_toggle(PIN_LED_ON);
+
+
 
     // Initialize SAM_M8Q
     // if (GNSS.begin(i2c_setUp, 0x42) == false) // Connect to the Ublox module using Wire port
@@ -179,8 +187,8 @@ int main()
 
             xbee.sendPkt(IMU_ROLL);
             xbee.sendPkt(IMU_PITCH);
-            printf("%ld(10^-3 m/s) ", parameters.imu_xvel);
-            printf("%ld(10^-3 m/s) ", parameters.imu_yvel);
+            // printf("%ld(10^-3 m/s) ", parameters.imu_xvel);
+            // printf("%ld(10^-3 m/s) ", parameters.imu_yvel);
             // xbee.sendPkt(IMU_ACCELERATION);
             // xbee.sendPkt(IMU_TILT);
 
@@ -198,7 +206,7 @@ int main()
             xbee.sendPkt(BME_PRESSURE);
             xbee.sendPkt(BME_ALTITUDE);
             xbee.sendPkt(BME_TEMPERATURE);
-
+            
             printf("\n");
 #endif
         }
@@ -249,7 +257,7 @@ void read_data()
     static uint8_t times = 0;
 
     read_imu();
-    // read_bme();
+    read_bme();
 
     // if ((times % 7) == 0)
     //     read_gnss();
@@ -257,10 +265,13 @@ void read_data()
     times++;
 }
 
+#define ABS(x) ((x) < 0 ? -(x) : (x))
 #define RAD_TO_DEG (180.0f / 3.14159265358979323846f)
 #define DEG_TO_RAD (1/RAD_TO_DEG)
 #define GRAVITY (9.80665f)
 #define IMU_SAMPLING_RATE (25.0f) // Hz
+#define STATIC_ACCELEROMETER_THRESHOLD (0.12f) // m/s^2
+#define STATIC_GYROSCOPE_THRESHOLD (0.15f) // m/s
 
 void read_imu()
 {
@@ -286,20 +297,34 @@ void read_imu()
     parameters.imu_roll = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
     parameters.imu_pitch = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
 
+    // printf("Accel_raw: %+2.2f %+2.2f %+2.2f - ", accel_g[0], accel_g[1], accel_g[2]);
+    // printf("Gyro_raw: %+2.2f %+2.2f %+2.2f - ", gyro_dps[0], gyro_dps[1], gyro_dps[2]);
+
     static float accel_y = 0;
     static float prev_accel_y = 0;
 
     static float vel_y = 0;
     static float prev_vel_y = 0;
 
+    static float pos_y = 0;
+    static float prev_pos_y = 0;
+
     accel_y = (accel_g[1] - cos((90 - parameters.imu_pitch / 10) * DEG_TO_RAD)) * GRAVITY; // m/s^2
 
-    vel_y = prev_vel_y + 0.5 * (accel_y + prev_accel_y) * GRAVITY * (1/IMU_SAMPLING_RATE);
+    // ZUPT -> Zero Velocitu Update
+    if ((ABS(accel_g[1]) > STATIC_ACCELEROMETER_THRESHOLD) && (ABS(gyro_dps[1]) > STATIC_GYROSCOPE_THRESHOLD))
+        vel_y +=  0.5 * (accel_y + prev_accel_y) * (1/IMU_SAMPLING_RATE);
+    else
+        vel_y = 0;
+    
+    pos_y += vel_y * (1/IMU_SAMPLING_RATE);
+
     prev_vel_y = vel_y;
     prev_accel_y = accel_y;
 
-    printf("Accel y: %+2.3f(m/s^2) - ", accel_y);
-    printf("Vel y: %2.3f(m/s)\n", vel_y);
+    // printf("Accel y: %+2.3f(m/s^2) - ", accel_y);
+    // printf("Vel y: %2.3f(m/s)\n", vel_y);
+    printf("vel:%f, pos:%f\n", vel_y, pos_y);
 }
 
 void read_gnss()
@@ -318,9 +343,14 @@ void read_gnss()
 
 void read_bme()
 {
-    parameters.bme_pressure = (uint32_t)BME.readPressure();
-    parameters.bme_altitude = (uint32_t)BME.readAltitude(1013.25);
     parameters.bme_temperature = (uint32_t)(BME.readTemperature() * 100);
+    parameters.bme_pressure = (uint32_t)BME.readPressure();
+    parameters.bme_altitude = (uint32_t)BME.readAltitude(ground_hP);
+
+    // printf("Pressure: %f(hPa) - ", BME.readPressure()/100);
+    // printf("Altitude: %f(m) - ", BME.readAltitude(ground_hP));
+    // printf("Temperature: %f(ºC) - ", BME.readTemperature());
+    // printf("Ground pressure: %f(hPa)\n", ground_hP);
 }
 
 void init_leds()
@@ -395,3 +425,11 @@ uint32_t saveData(packet data)
     return saves;
 } // TODO: Fijarse que no sobreescriba la sección de código (contemplar ese caso)
   // TODO: hardcodear el archivo build/pico_flash_region.ld
+
+// Returns the current pressure. Handy to have for calibration processes  
+void calibrate_bme(void)
+{
+    float pressure = BME.readPressure();
+    pressure /= 100;
+    ground_hP = pressure;
+}
