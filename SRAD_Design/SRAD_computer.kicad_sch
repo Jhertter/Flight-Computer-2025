@@ -10701,6 +10701,16 @@
 	)
 	(wire
 		(pts
+			(xy 34.29 255.27) (xy 41.91 255.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4d643906-78d0-4cea-bb10-f39872e298a2")
+	)
+	(wire
+		(pts
 			(xy 69.85 59.69) (xy 100.33 59.69)
 		)
 		(stroke
@@ -11308,6 +11318,16 @@
 			(type default)
 		)
 		(uuid "80acebb3-04ee-4d26-942d-9503d5ce6cd7")
+	)
+	(wire
+		(pts
+			(xy 34.29 255.27) (xy 34.29 260.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "80fdaee7-4794-4fd3-87f0-f34ad1c0c327")
 	)
 	(wire
 		(pts
@@ -12361,6 +12381,16 @@
 	)
 	(wire
 		(pts
+			(xy 34.29 260.35) (xy 27.94 260.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c600fe77-1cfd-4a59-9fde-0f3dece4d7a6")
+	)
+	(wire
+		(pts
 			(xy 261.62 77.47) (xy 247.65 77.47)
 		)
 		(stroke
@@ -13179,7 +13209,7 @@
 		)
 		(uuid "075a5481-2431-450e-b3a1-1d8489f74952")
 	)
-	(label "SD_DAT1"
+	(label "UART_Tx"
 		(at 340.36 137.16 180)
 		(effects
 			(font
@@ -13379,7 +13409,7 @@
 		)
 		(uuid "3fe9e311-b156-40d6-a3a0-1c3d8193e63e")
 	)
-	(label "UART_Rx"
+	(label "SD_DAT1"
 		(at 340.36 144.78 180)
 		(effects
 			(font
@@ -13819,7 +13849,7 @@
 		)
 		(uuid "cf6ac7ef-ae7a-4e5e-a5b5-4f9345979c97")
 	)
-	(label "UART_Tx"
+	(label "UART_Rx"
 		(at 340.36 139.7 180)
 		(effects
 			(font
@@ -18380,7 +18410,7 @@
 				)
 			)
 		)
-		(property "Footprint" "my_lib:503398-1892-1"
+		(property "Footprint" "my_lib:693071010811"
 			(at 201.93 260.02 0)
 			(effects
 				(font
@@ -21002,6 +21032,70 @@
 			(project ""
 				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
 					(reference "C_VDD_MPU1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 27.94 260.35 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "a9094695-6ac5-4a23-8188-141b314a09aa")
+		(property "Reference" "#PWR041"
+			(at 27.94 264.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 28.321 255.9558 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 27.94 260.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 27.94 260.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 27.94 260.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "a7c45aa1-a29d-49e6-9a0f-89bc3ba1cd8e")
+		)
+		(instances
+			(project "SRAD_computer"
+				(path "/f015d259-36b1-4d36-b25a-c9dc3131b66c"
+					(reference "#PWR041")
 					(unit 1)
 				)
 			)

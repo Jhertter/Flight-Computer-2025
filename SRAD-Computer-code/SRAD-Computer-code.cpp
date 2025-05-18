@@ -1,10 +1,8 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/time.h"
-// #include "hardware/spi.h"
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
-// #include "hardware/uart.h"
 #include "hardware/flash.h" //para programar y borrar flash
 #include "hardware/sync.h"  //para interrupciones
 #include "libraries/icm_20948/pico-icm20948.h"
@@ -13,9 +11,11 @@
 #include "libraries/bmp_280/bmp280.h"
 #include "libraries/XBee/XBee.h"
 
+#define PRINT_DEBUG_PKT 0
+
 #define I2C_FREQUENCY 100000
 
-#define PIN_LED_COM 11
+#define PIN_LED_ON 11
 #define PIN_LED_ERROR 10
 #define PIN_LED_ALTITUDE 9
 
@@ -26,65 +26,66 @@
 #define PIN_UART_RX 25
 
 #define UART_ID uart1
-#define UART_BAUD 9600
+#define UART_BAUD 115200
 #define UART_STOP_BITS 1
 #define UART_DATA_BITS 8
 #define UART_PARITY UART_PARITY_NONE
 
-// #define PIN_SD_CLK 20
-// #define PIN_SD_CMD 21
-// #define PIN_SD_DAT0 19
-// #define PIN_SD_DAT1 25
-// #define PIN_SD_DAT2 23
-// #define PIN_SD_DAT3 22
-
-#define FLASH_OFFSET (0x01000000) //definimos un offset para no pisar nuestro código
+#define FLASH_OFFSET (0x01000000) // definimos un offset para no pisar nuestro código
 
 const static int gpio_size = 3;
 const static int gpio_array[] = {
-    PIN_LED_COM,
+    PIN_LED_ON,
     PIN_LED_ALTITUDE,
     PIN_LED_ERROR};
+
+const static int16_t accel_bias [3] = {96, -94, 5};
 
 i2c_inst_t i2c_setUp = {i2c0_hw, false};
 icm20948_config_t IMU_config = {0x69, 0x0C, &i2c_setUp};
 icm20984_data_t data;
 madgwick_ahrs_t filter = {0.5f, {1.0f, 0.0f, 0.0f, 0.0f}};
-
 BMP280 BME(&i2c_setUp);
-
 SFE_UBLOX_GNSS GNSS;
 
 xbee_uart_cfg_t uart_cfg = {UART_ID, UART_BAUD, UART_STOP_BITS, UART_DATA_BITS, UART_PARITY};
 XBee xbee(uart_cfg, to_ms_since_boot(get_absolute_time()));
 
-const uint8_t * flashBase = (const uint8_t *)(XIP_BASE + FLASH_OFFSET);
+const uint8_t *flashBase = (const uint8_t *)(XIP_BASE + FLASH_OFFSET);
 
-typedef struct{
-    float pressure = 0;
-    float temperature = 0;
-    float altitudeBME = 0;
-    
-    uint32_t GNSS_time = 0;
+typedef struct
+{
+    uint32_t bme_pressure = 0;
+    uint32_t bme_temperature = 0;
+    uint32_t bme_altitude = 0;
+
     uint8_t satellite_count = 0;
-    int32_t latitude = 0;     // latitude +-90ª
-    int32_t longitude = 0;   // longitude +-180ª
-    int32_t altitude = 0;
-    int32_t altitude_MSL = 0;
-    
-    uint32_t imu_acceleration = 0;
-    uint32_t imu_tilt = 0;
+    uint32_t gnss_time = 0;
+    int32_t gnss_latitude = 0;  // latitude +-90ª
+    int32_t gnss_longitude = 0; // longitude +-180ª
+    int32_t gnss_altitude = 0;
+    int32_t gnss_altitude_MSL = 0;
+
+    int16_t imu_roll = 0;
+    int16_t imu_pitch = 0;
+    int32_t imu_accel_y = 0;
+    int32_t imu_vel_y = 0;
 } packet;
 
-#define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE/sizeof(packet)))
-#define FLASH_SIZE ((uint32_t)(2 * 1024 * 1024))
+#define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE / sizeof(packet)))
+#define FLASH_SIZE ((uint32_t)(16 * 1024 * 1024))
 
 packet parameters;
-packet test;
 
-bool read_imu(repeating_timer_t *rt);
-bool read_gnss(repeating_timer_t *rt);
-bool read_bme(repeating_timer_t *rt);
+void read_data();
+void update_xbee_parameters(uint32_t last_time);
+
+void calibrate_bme(void);
+
+void read_imu();
+void read_gnss();
+void read_bme();
+static float ground_hP = 0;
 
 void gpio_toggle(int pin);
 void init_leds();
@@ -94,135 +95,119 @@ uint32_t saveData(packet data);
 
 int main()
 {
-    test.altitude = 99;
-    test.altitude_MSL = 48;
-    test.altitudeBME = 1.5f;
-    test.GNSS_time = 33;
-    test.imu_acceleration = 100;
-    test.imu_tilt = 87;
-    test.latitude = 66;
-    test.longitude = 77;
-    test.pressure = 88;
-    test.satellite_count = 5;
-    test.temperature = 34;
-    
     stdio_init_all();
     init_leds();
-    
+
     // Initialize I2C Bus
     gpio_init(PIN_I2C_SCL);
     gpio_init(PIN_I2C_SDA);
-    i2c_init(&i2c_setUp, I2C_FREQUENCY); //320kHz
+    i2c_init(&i2c_setUp, I2C_FREQUENCY); // 320kHz
     gpio_set_function(PIN_I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(PIN_I2C_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(PIN_I2C_SDA);
     gpio_pull_up(PIN_I2C_SCL);
-    
+
     gpio_set_function(PIN_UART_TX, GPIO_FUNC_UART);
     gpio_set_function(PIN_UART_RX, GPIO_FUNC_UART);
-    
-    sleep_ms(5000);
 
     // Initialize ICM-20948
-    printf("Initializing IMU...\n");
-    if (!icm20948_init(&IMU_config))
+    if (icm20948_init(&IMU_config) != 0)
     {
-        gpio_put(PIN_LED_ERROR, 1);
         printf("IMU not detected at I2C address. Freezing");
-    }
-    // else 
-    // {
-    //     gpio_put(PIN_LED_COM, 1);
-    //     printf("IMU initialized.\n");
-    // }
-    
-    icm20948_cal_gyro(&IMU_config, &data.gyro_bias[0]);
-    printf("calibrated gyro: %d %d %d\n", data.gyro_bias[0], data.gyro_bias[1], data.gyro_bias[2]);
-
-    icm20948_cal_accel(&IMU_config, &data.accel_bias[0]);
-    printf("calibrated accel: %d %d %d\n", data.accel_bias[0], data.accel_bias[1], data.accel_bias[2]);
-    
-    
-    // Initialize BME280
-    printf("Initializing ESU...\n");
-    if(BME.begin(0x76, 0x60) == false)
-    {
-        printf("ESU not detected at default I2C address. Please check wiring. Freezing.");
         gpio_put(PIN_LED_ERROR, 1);
-        while (1);
+        while (true)
+            ;
     }
-    // else
-    // {
-    //     gpio_put(PIN_LED_ALTITUDE, 1);
-    //     printf("ESU initialized.\n");
-    // }
-    
+    gpio_toggle(PIN_LED_ALTITUDE);
+
+    icm20948_cal_gyro(&IMU_config, &data.gyro_bias[0]);
+
+    data.accel_bias[0] = accel_bias[0];
+    data.accel_bias[1] = accel_bias[1];
+    data.accel_bias[2] = accel_bias[2];
+
+    // Initialize BME280
+    if (BME.begin(0x76, 0x60) == false)
+    {
+        printf("BME not detected at default I2C address. Freezing.");
+        gpio_put(PIN_LED_ERROR, 1);
+        while (1)
+            ;
+    }
+    calibrate_bme(); // Actualizamos la presión actual en el suelo, así calculamos la altura a partir de esto
+
+    gpio_toggle(PIN_LED_ON);
+
     // Initialize SAM_M8Q
-    printf("Initializing GNSS...\n");
     if (GNSS.begin(i2c_setUp, 0x42) == false) // Connect to the Ublox module using Wire port
     {
-        printf("GNSS not detected at default I2C address. Please check wiring. Freezing.");
+        printf("GNSS not detected at default I2C address. Freezing.");
         gpio_put(PIN_LED_ERROR, 1);
-        while (1);
+        while (1)
+            ;
     }
     else
     {
         // printf("GNSS initialized.\n");
         GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GLONASS, 11000);
     }
-    printf("All sensors initialized without errors.\n");
-    gpio_put(PIN_LED_ALTITUDE, 1);
-    
-    // static repeating_timer_t timer_imu;
-    // add_repeating_timer_ms(30, &read_imu, &parameters, &timer_imu);
-    
-    // static repeating_timer_t timer_gnss;
-    // add_repeating_timer_ms(200, &read_gnss, &parameters, &timer_gnss);
-    
-    // static repeating_timer_t timer_bme;
-    // add_repeating_timer_ms(30, &read_bme, &parameters, &timer_bme);
-    
-    // for(uint8_t i = 0; i<19; i++)
-    // {
-    //     saveData(test);
-    // }
-
-    // packet* test_ptr = (packet*)((FLASH_SIZE >> 1) - FLASH_PAGE_SIZE);
-    // for(uint8_t j = 0; j < 19; j++)
-    // {
-    //     test_ptr += j;
-    //     if(j % BUFFER_SIZE == 0)
-    //     {
-    //         test_ptr = (packet*)((FLASH_SIZE >> 1) - FLASH_PAGE_SIZE - FLASH_PAGE_SIZE * j/BUFFER_SIZE);
-    //         test_ptr += j - BUFFER_SIZE;
-    //     }
-    //     printf("Packet %d: ", j);
-    //     printf("Packet %d: ", test_ptr->GNSS_time);
-    //     printf("Lat: %ld - ", test_ptr->latitude);
-    //     printf("Long: %ld - ", test_ptr->longitude);
-    //     printf("Alt: %d (mm) - ", test_ptr->altitude);
-    //     printf("AltMSL: %d (mm) - ", test_ptr->altitude_MSL);
-    //     printf("Pressure: %f (hPa) - ", test_ptr->pressure/100);
-    //     printf("Temperature: %f (C) - ", test_ptr->temperature);
-    //     printf("Alt BME: %f (m)\n", test_ptr->altitudeBME);
-    // }
+    init_leds();
+    gpio_put(PIN_LED_ON, 1);
 
     while (true)
     {
-        static long lastTime = 0;
-        static char byte = 0;
+        static uint32_t last_time = 0;
+        static uint32_t last_time_xbee = 0;
 
-        if (to_ms_since_boot(get_absolute_time()) - lastTime > 500)
+        if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
         {
-            lastTime = to_ms_since_boot(get_absolute_time()); // Update the timer
+            last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
-            xbee.setMissionTime(to_ms_since_boot(get_absolute_time()));
-            xbee.setGNSSTime(GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
-            xbee.setGNSSLatitude(GNSS.getLatitude());
+            
+            read_data();
+            update_xbee_parameters(last_time);
+            
+            if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 40)
+            {
+                last_time_xbee = to_ms_since_boot(get_absolute_time());
+                xbee.sendPkt();
+            }
+
+#if PRINT_DEBUG_PKT
+            // Send data -> this format is just for testing
+            printf("%d - ", parameters.satellite_count);
 
             xbee.sendPkt(MISSION_TIME);
-            // xbee.sendPkt(GNSS_LATITUDE);
-            // xbee.sendPkt(GNSS_TIME);
+            // xbee.sendPkt(PACKET_COUNT);
+            // xbee.sendPkt(STATUS);
+            // xbee.sendPkt(BATTERY_VOLTAGE);
+
+            printf("- ");
+
+            xbee.sendPkt(IMU_ROLL);
+            xbee.sendPkt(IMU_PITCH);
+            // printf("%ld(10^-3 m/s) ", parameters.imu_xvel);
+            // printf("%ld(10^-3 m/s) ", parameters.imu_yvel);
+            // xbee.sendPkt(IMU_ACCELERATION);
+            // xbee.sendPkt(IMU_TILT);
+
+            printf("- ");
+
+            if (parameters.satellite_count > 0)
+            {
+                xbee.sendPkt(GNSS_LATITUDE);
+                xbee.sendPkt(GNSS_LONGITUDE);
+                xbee.sendPkt(GNSS_ALTITUDE);
+            }
+
+            printf("- ");
+
+            xbee.sendPkt(BME_PRESSURE);
+            xbee.sendPkt(BME_ALTITUDE);
+            xbee.sendPkt(BME_TEMPERATURE);
+
+            printf("\n");
+#endif
         }
     }
 }
@@ -235,56 +220,122 @@ void gpio_toggle(int pin)
         gpio_put(pin, 1);
 }
 
-bool read_imu(repeating_timer_t *rt)
+void update_xbee_parameters(uint32_t last_time)
 {
-    static int16_t accel_raw[3] = {0};
-    static int16_t gyro_raw[3] = {0};
-    static int16_t mag_raw[3] = {0};
-    static int16_t temp_raw = 0;
+    // Mission data
+    xbee.setMissionTime(last_time);
+    xbee.setPacketCount();
+    // xbee.setBatteryVoltage(parameters.battery_voltage);
+
+    // GNSS data
+    if (parameters.satellite_count > 0)
+    {
+        xbee.setGNSSTime(GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
+        xbee.setGNSSLatitude(parameters.gnss_latitude);
+        xbee.setGNSSLongitude(parameters.gnss_longitude);
+        xbee.setGNSSAltitude(parameters.gnss_altitude, parameters.gnss_altitude_MSL);
+    }
+
+    // ESU data
+    xbee.setBMEPressure(parameters.bme_pressure);
+    xbee.setBMEAltitude(parameters.bme_altitude);
+    xbee.setBMETemperature(parameters.bme_temperature);
+
+    // IMU data
+    xbee.setIMUPitch(parameters.imu_pitch);
+    xbee.setIMURoll(parameters.imu_roll);
+    xbee.setIMUVerticalVel(parameters.imu_vel_y);
+}
+
+void read_data()
+{
+    static uint8_t times = 0;
+
+    read_imu();
+
+    if ((times % 5) == 0)
+        read_bme();
+
+    if ((times % 20) == 0)
+        read_gnss();
+
+    times++;
+ 
+    if (times > 240)
+        times = 0;
+}
+
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define RAD_TO_DEG (180.0f / 3.14159265358979323846f)
+#define DEG_TO_RAD (1 / RAD_TO_DEG)
+#define GRAVITY (9.80665f)
+#define IMU_SAMPLING_RATE (200.0f)              // Hz
+#define STATIC_ACCELEROMETER_THRESHOLD (0.12f) // m/s^2
+#define STATIC_GYROSCOPE_THRESHOLD (0.15f)     // m/s
+
+void read_imu()
+{
     static float accel_g[3] = {0};
     static float gyro_dps[3] = {0};
-    static float mag_ut[3] = {0};
 
     icm20948_read_cal_accel(&IMU_config, &data.accel_raw[0], &data.accel_bias[0]);
     icm20948_read_cal_gyro(&IMU_config, &data.gyro_raw[0], &data.gyro_bias[0]);
-    icm20948_read_cal_mag(&IMU_config, &data.mag_raw[0], &data.mag_bias[0]);
-    // icm20948_read_temp_c(&IMU_config, &data.temp_c);
 
-    accel_g[0] = (float)data.accel_raw[0] / 16384.0f;
-    accel_g[1] = (float)data.accel_raw[1] / 16384.0f;
-    accel_g[2] = (float)data.accel_raw[2] / 16384.0f;
+    accel_g[0] = (float)data.accel_raw[0] / 4096.0f;
+    accel_g[1] = (float)data.accel_raw[1] / 4096.0f;
+    accel_g[2] = (float)data.accel_raw[2] / 4096.0f;
+
     gyro_dps[0] = (float)data.gyro_raw[0] / 131.0f;
     gyro_dps[1] = (float)data.gyro_raw[1] / 131.0f;
-    gyro_dps[2] = (float)data.gyro_raw[2] / 131.0f;
-    mag_ut[0] = (float)data.mag_raw[1];
-    mag_ut[1] = (float)-data.mag_raw[0];
-    mag_ut[2] = (float)-data.mag_raw[2];
+    
+    parameters.imu_roll = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
+    parameters.imu_pitch = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
 
-    MadgwickAHRSupdate(&filter, gyro_dps[0], gyro_dps[1], gyro_dps[2], accel_g[0] * 9.8, accel_g[1] * 9.8, accel_g[2] * 9.8, mag_ut[0], mag_ut[1], mag_ut[2]);
+    parameters.imu_accel_y = (accel_g[1] * (-GRAVITY)); // m/s^2
+    parameters.imu_accel_y = (ABS(parameters.imu_accel_y) < STATIC_ACCELEROMETER_THRESHOLD) ? 0 : parameters.imu_accel_y; // m/s^2
 
-    return true;
+    // ZUPT -> Zero Velocitu Update
+    // if ((ABS(accel_g[1]) < STATIC_ACCELEROMETER_THRESHOLD) && (ABS(gyro_dps[1]) < STATIC_GYROSCOPE_THRESHOLD))
+    //     delta_vel_y = 0;
+    // else
+    //     delta_vel_y += 0.5 * (accel_y + prev_accel_y) * (1 / IMU_SAMPLING_RATE);
+
+    // vel_y += delta_vel_y; // m/s
+
+    // prev_accel_y = accel_y;
+
+    // printf("Accel :%2.3f %2.3f %2.3f ,", accel_g[0], accel_g[1], accel_g[2]);
+    // printf("pitch:%f\n", (float)parameters.imu_pitch / 10);
+    // printf("accel_y:%f,vel:%f,pos:%f,pitch:%f\n", accel_y, vel_y, pos_y, (float)parameters.imu_pitch / 10);
 }
 
-bool read_gnss(repeating_timer_t *rt)
+void read_gnss()
 {
-    parameters.GNSS_time = GNSS.getHour() * 10000 + GNSS.getMinute() * 100 + GNSS.getSecond();
     parameters.satellite_count = GNSS.getSIV();
-    parameters.latitude = GNSS.getLatitude();     // latitude +-90ª
-    parameters.longitude = GNSS.getLongitude();   // longitude +-180ª
-    parameters.altitude = GNSS.getAltitude();
-    parameters.altitude_MSL = GNSS.getAltitudeMSL();
 
-    
-    return true;
+    if (parameters.satellite_count > 0)
+    {
+        parameters.gnss_time = GNSS.getHour() * 10000 + GNSS.getMinute() * 100 + GNSS.getSecond();
+        parameters.gnss_latitude = GNSS.getLatitude();   // latitude +-90ª
+        parameters.gnss_longitude = GNSS.getLongitude(); // longitude +-180ª
+        parameters.gnss_altitude = GNSS.getAltitude();
+        parameters.gnss_altitude_MSL = GNSS.getAltitudeMSL();
+    }
 }
 
-bool read_bme(repeating_timer_t *rt)
+// Returns the current pressure. Handy to have for calibration processes
+void calibrate_bme(void)
 {
-    parameters.pressure = BME.readPressure();
-    parameters.temperature = BME.readTemperature();
-    parameters.altitudeBME = BME.readAltitude(1013.25);
-    
-    return true;
+    float pressure = BME.readPressure();
+    pressure /= 100;
+    ground_hP = pressure;
+}
+
+void read_bme()
+{
+    parameters.bme_temperature = (uint32_t)(BME.readTemperature() * 100);
+    parameters.bme_pressure = (uint32_t)BME.readPressure();
+    parameters.bme_altitude = (uint32_t)BME.readAltitude(ground_hP);
 }
 
 void init_leds()
@@ -302,10 +353,11 @@ void init_leds()
         sleep_ms(100);
         gpio_toggle(PIN_LED_ERROR);
         sleep_ms(100);
-        gpio_toggle(PIN_LED_COM);
+        gpio_toggle(PIN_LED_ON);
         sleep_ms(100);
     }
 }
+
 /*
 Función que guarda estructuras en un buffer, y cuando este se llena, guarda este
 buffer en memoria flash.
@@ -324,37 +376,37 @@ uint32_t saveData(packet data)
     printf("Saves: %d\n", saves);
     sleep_ms(100);
 
-    if(buff_count < BUFFER_SIZE)
+    if (buff_count < BUFFER_SIZE)
     {
         buffer_flash[buff_count] = data;
         buff_count++;
     }
     else
     {
-        //La idea es borrar los sectores a medida que necesitemos. Entran 16 páginas 
+        // La idea es borrar los sectores a medida que necesitemos. Entran 16 páginas
         //(escrituras), por lo que cada 16 iteraciones borramos el siguiente sector
-        if(saves % 16 == 0) 
+        if (saves % 16 == 0)
         {
             printf("Erasing sector %d\n", saves / 16);
             sleep_ms(100);
-            uint32_t erase_addr = (FLASH_SIZE >> 1) - (uint32_t)(FLASH_SECTOR_SIZE * saves / 16) - 1;
+            uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * (saves / 16 + 1));
 
             uint32_t ints = save_and_disable_interrupts();
             flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
-            restore_interrupts (ints);
+            restore_interrupts(ints);
         }
-        //Después de borrar (si fue necesario), guardamos el buffer en memoria
+        // Después de borrar (si fue necesario), guardamos el buffer en memoria
         printf("Writing buffer %d\n", saves);
         sleep_ms(100);
-        uint32_t prog_addr = (FLASH_SIZE >> 1) - (FLASH_PAGE_SIZE * saves);
+        uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * (saves + 1));
 
         uint32_t ints = save_and_disable_interrupts();
-        flash_range_program(prog_addr, (uint8_t*)(buffer_flash), FLASH_PAGE_SIZE);
-        restore_interrupts (ints);
+        flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
+        restore_interrupts(ints);
 
         saves++;
         buff_count = 0;
     }
     return saves;
-} //TODO: Fijarse que no sobreescriba la sección de código (contemplar ese caso)
-    //TODO: hardcodear el archivo build/pico_flash_region.ld
+} // TODO: Fijarse que no sobreescriba la sección de código (contemplar ese caso)
+  // TODO: hardcodear el archivo build/pico_flash_region.ld
