@@ -67,10 +67,11 @@ int8_t icm20948_init(icm20948_config_t *config)
 
     // accel config
     //
-    // set full scale to +-2g
+    // set full scale to +-8g
     // set noise bandwidth to 136Hz
     reg[0] = ACCEL_CONFIG;
-    reg[1] = 0x11;
+
+    reg[1] = 0b00000100;  // 0xAA_BBB_CC_D; BBB:DLPF, CC:FS_SEL, AA:DLPF enable
     i2c_write_blocking(config->i2c, config->addr_accel_gyro, reg, 2, false);
     //
     // set accel output data rate to 100Hz
@@ -264,7 +265,7 @@ void icm20948_cal_accel(icm20948_config_t *config, int16_t accel_bias[3])
         for (uint8_t j = 0; j < 3; j++)
         {
             if (j == 2)
-                bias[j] += (buf[j] - 16384);
+                bias[j] += (buf[j] - 4096);
             else
                 bias[j] += buf[j];
         }

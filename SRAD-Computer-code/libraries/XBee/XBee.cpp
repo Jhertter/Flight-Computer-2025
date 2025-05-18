@@ -7,6 +7,7 @@ XBee::XBee(xbee_uart_cfg_t cfg, uint32_t time)
     uart_init(uart_cfg.uart_id, uart_cfg.baud_rate);
     uart_set_hw_flow(uart_cfg.uart_id, false, false);
     uart_set_format(uart_cfg.uart_id, uart_cfg.data_bits, uart_cfg.stop_bit, uart_cfg.parity);
+    pkt[PKT_SIZE] = '\n'; // Add the terminator to the end of the packet
 
     start_time = time;
 }
@@ -53,7 +54,7 @@ void XBee::setBatteryVoltage(char voltage)
     parseMsg(BATTERY_VOLTAGE);
 }
 
-void XBee::setIMUYVel(uint32_t vel)
+void XBee::setIMUVerticalVel(int32_t vel)
 {
     imu_y_vel = vel;
     parseMsg(IMU_Y_VEL);
@@ -136,12 +137,12 @@ void XBee::setBMETemperature(float temperature)
 
 void XBee::sendPkt()
 {
-    for (int i=0; i<PKT_SIZE; i++)
+    for (int i=0; i<=PKT_SIZE; i++)
     {
         uart_putc(uart_cfg.uart_id , pkt[i]);
-        printf("%c", pkt[i]);
+        // printf("%c", pkt[i]);
     }
-    printf("\n");
+    // printf("\n");
 }
 
 /**

@@ -73,7 +73,7 @@ class XBee
         void setStatus(MissionStatus_t m_status);
         void setBatteryVoltage(char voltage); 
         
-        void setIMUYVel(uint32_t vel);
+        void setIMUVerticalVel(int32_t vel);
         void setIMURoll(int16_t roll);
         void setIMUPitch(int16_t pitch);
         
