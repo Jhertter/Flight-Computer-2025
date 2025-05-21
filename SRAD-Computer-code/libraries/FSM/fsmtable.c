@@ -10,6 +10,9 @@ extern STATE descent[];
 extern STATE landing[];
 extern STATE recovery[];
 extern STATE mission_complete[];
+#if DEBUG_FSM
+extern STATE reset_FSM[];
+#endif
 
 // prototipos
 
@@ -35,7 +38,7 @@ STATE pre_launch[] =
 	{MOVE, "pre_launch", launch, startTransmission}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, "pre_launch", reset, do_nothing}
+	{RESET_MISSION, "pre_launch", reset_FSM, do_nothing}
 #endif
 };
 
@@ -51,7 +54,7 @@ STATE launch[] =
 	{MOVE, "launch", ascent, do_nothing}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, "launch", reset, do_nothing}
+	{RESET_MISSION, "launch", reset_FSM, do_nothing}
 #endif
 };
 
@@ -65,7 +68,7 @@ STATE ascent[] =
 	{MOVE, "ascent", apogee, do_nothing}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, reset, do_nothing}
+	{RESET_MISSION, "ascent", reset_FSM, do_nothing}
 #endif
 };
 
@@ -79,7 +82,7 @@ STATE apogee[] =
 	{MOVE, "apogee", descent, do_nothing}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, reset, do_nothing}
+	{RESET_MISSION, "apogee", reset_FSM, do_nothing}
 #endif
 };
 
@@ -89,11 +92,11 @@ STATE apogee[] =
  */
 STATE descent[] =
 {
-	{STAY, descent, telemetry},
-	{MOVE, landing, do_nothing}
+	{STAY, "descent", descent, telemetry},
+	{MOVE, "descent", landing, do_nothing}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, reset, do_nothing}
+	{RESET_MISSION, "descent", reset_FSM, do_nothing}
 #endif
 };
 
@@ -103,10 +106,10 @@ STATE descent[] =
  */
 STATE landing[] =
 {
-	{MOVE, recovery, stand_by_mode}
+	{MOVE, "landing", recovery, stand_by_mode}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, reset, do_nothing}
+	{RESET_MISSION, "landing", reset_FSM, do_nothing}
 #endif
 };
 
@@ -117,11 +120,11 @@ STATE landing[] =
  */
 STATE recovery[] =
 {
-	{STAY, recovery, recovery_signal},
-	{MOVE, mission_complete, do_nothing}
+	{STAY, "recovery", recovery, recovery_signal},
+	{MOVE, "recovery", mission_complete, do_nothing}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, reset, do_nothing}
+	{RESET_MISSION, "recovery", reset_FSM, do_nothing}
 #endif
 };
 
@@ -132,12 +135,20 @@ STATE recovery[] =
  */
 STATE mission_complete[] =
 {
-	{STAY, mission_complete, do_nothing}
+	{STAY, "mission_complete", mission_complete, do_nothing}
 #if DEBUG_FSM
 	,
-	{RESET_MISSION, reset, do_nothing}
+	{RESET_MISSION, "mission_complete", reset_FSM, do_nothing}
 #endif
 };
+
+#if DEBUG_FSM
+STATE *reset_FSM[] =
+{
+	{STAY, "reset", reset_FSM, do_nothing},
+	{MOVE, "reset", pre_launch, do_nothing}
+};
+#endif
 
 //========interfaz=================
 
