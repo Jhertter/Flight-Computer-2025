@@ -16204,6 +16204,9 @@ bool SFE_UBLOX_GNSS::setNavigationFrequency(uint8_t navFreq, uint16_t maxWait)
     payloadCfg[0] = measurementRate & 0xFF; // measRate LSB
     payloadCfg[1] = measurementRate >> 8;   // measRate MSB
 
+
+    // veo que nunca cambia el len a más de 0
+    packetCfg.len = 6; // Set the length of the packet to 6 bytes
     bool result = ((sendCommand(&packetCfg, maxWait)) == SFE_UBLOX_STATUS_DATA_SENT); // We are only expecting an ACK
 
     flushCFGRATE(); // Mark the polled measurement and navigation rate data as stale

@@ -58,7 +58,7 @@ int main()
         GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS);
         GNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS);
         GNSS.setI2COutput(COM_TYPE_UBX);
-        if (GNSS.setNavigationFrequency(2))
+        if (GNSS.setNavigationFrequency(10))
             printf("GNSS nav Frequency: %d\n", GNSS.getNavigationFrequency());
         else
             printf("Skill issue");
