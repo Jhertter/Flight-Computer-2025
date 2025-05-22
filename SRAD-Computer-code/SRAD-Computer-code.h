@@ -16,7 +16,7 @@
 
 #define PRINT_DEBUG_PKT 0
 
-#define I2C_FREQUENCY 100000
+#define I2C_FREQUENCY 400000
 
 #define PIN_LED_ON 11
 #define PIN_LED_ERROR 10
@@ -35,6 +35,7 @@
 #define UART_PARITY UART_PARITY_NONE
 
 #define FLASH_OFFSET (0x01000000) // definimos un offset para no pisar nuestro código
+#define FLASH_CODE_END ((uint32_t)(XIP_BASE + FLASH_OFFSET)) //Hardcodear cuando tengamos el código final
 
 const static int gpio_size = 3;
 const static int gpio_array[] = {
@@ -66,7 +67,7 @@ typedef struct
     uint32_t gnss_time = 0;
     int32_t gnss_latitude = 0;  // latitude +-90ª
     int32_t gnss_longitude = 0; // longitude +-180ª
-    int32_t gnss_altitude = 0;
+    int16_t gnss_altitude = 0;
     int32_t gnss_altitude_MSL = 0;
 
     int16_t imu_roll = 0;
@@ -78,7 +79,7 @@ typedef struct
 #define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE / sizeof(packet)))
 #define FLASH_SIZE ((uint32_t)(16 * 1024 * 1024))
 
-packet parameters;
+packet parameters = {0};
 
 void read_data();
 void update_xbee_parameters(uint32_t last_time);
@@ -95,5 +96,6 @@ void init_leds();
 
 packet buffer_flash[BUFFER_SIZE] = {0};
 uint32_t saveData(packet data);
+void readData(uint32_t n_buffers);
 
 #endif 

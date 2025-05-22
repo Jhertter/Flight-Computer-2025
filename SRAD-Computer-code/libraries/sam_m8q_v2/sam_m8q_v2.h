@@ -56,7 +56,7 @@
 //#define SFE_UBLOX_REDUCED_PROG_MEM // Uncommenting this line will delete the minor debug messages to save memory
 
 // Uncomment the next line (or add SFE_UBLOX_DISABLE_AUTO_NMEA as a compiler directive) to reduce the amount of program memory used by the library
-//#define SFE_UBLOX_DISABLE_AUTO_NMEA // Uncommenting this line will disable auto-NMEA support to save memory
+#define SFE_UBLOX_DISABLE_AUTO_NMEA // Uncommenting this line will disable auto-NMEA support to save memory
 
 // The code exceeds the program memory on the ATmega328P (Arduino Uno), so let's delete the minor debug messages and disable auto-NMEA support anyway
 // However, the ATmega2560 and ATmega1280 _do_ have enough memory, so let's exclude those

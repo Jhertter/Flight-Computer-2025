@@ -16194,7 +16194,9 @@ bool SFE_UBLOX_GNSS::setNavigationFrequency(uint8_t navFreq, uint16_t maxWait)
 
     // This will load the payloadCfg array with current settings of the given register
     if (sendCommand(&packetCfg, maxWait) != SFE_UBLOX_STATUS_DATA_RECEIVED) // We are expecting data and an ACK
+    {
         return (false);                                                     // If command send fails then bail
+    }
 
     uint16_t measurementRate = 1000 / navFreq;
 
@@ -16205,7 +16207,6 @@ bool SFE_UBLOX_GNSS::setNavigationFrequency(uint8_t navFreq, uint16_t maxWait)
     bool result = ((sendCommand(&packetCfg, maxWait)) == SFE_UBLOX_STATUS_DATA_SENT); // We are only expecting an ACK
 
     flushCFGRATE(); // Mark the polled measurement and navigation rate data as stale
-
     return (result);
 }
 

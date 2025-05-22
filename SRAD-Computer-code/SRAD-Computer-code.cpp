@@ -55,8 +55,21 @@ int main()
     }
     else
     {
-        // printf("GNSS initialized.\n");
-        GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GLONASS, 11000);
+        GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS);
+        GNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS);
+        GNSS.setI2COutput(COM_TYPE_UBX);
+        if (GNSS.setNavigationFrequency(2))
+            printf("GNSS nav Frequency: %d\n", GNSS.getNavigationFrequency());
+        else
+            printf("Skill issue");
+
+        // GNSS.setNavigationRate(11);
+        // printf("Navigation Frequency: %d",GNSS.getNavigationFrequency());
+        // GNSS.setMeasurementRate(70);
+        // GNSS.setAutoPVTrate(11);
+        // GNSS.setHNRNavigationRate(11);
+        // GNSS.setAutoHNRPVTrate(11);
+    
     }
     init_leds();
     gpio_put(PIN_LED_ON, 1);
@@ -65,34 +78,46 @@ int main()
     {
         static uint32_t last_time = 0;
         static uint32_t last_time_xbee = 0;
-
+        uint32_t time1, time2;
+        
         if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
         {
             last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-
             
+            // time1 = to_ms_since_boot(get_absolute_time());      //JFT
             read_data();
-            update_xbee_parameters(last_time);
+            // time2 = to_ms_since_boot(get_absolute_time());      //JFT
             
-            if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 40)
-            {
-                last_time_xbee = to_ms_since_boot(get_absolute_time());
-                xbee.sendPkt();
-            }
+            // printf("Read data time: %d ms\n", time2 - time1);   //JFT
+
+            // time1 = to_ms_since_boot(get_absolute_time());      //JFT
+            update_xbee_parameters(last_time);
+            // time2 = to_ms_since_boot(get_absolute_time());      //JFT
+            
+            // printf("Xbee time: %d ms\n", time2 - time1);        //JFT
+        }
+
+        if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 100)
+        {
+            last_time_xbee = to_ms_since_boot(get_absolute_time());     //JFT
+            xbee.sendPkt();
+            // time2 = to_ms_since_boot(get_absolute_time());              //JFT
+
+            // printf("Xbee time: %d ms\n", time2 - last_time_xbee);       //JFT
 
 #if PRINT_DEBUG_PKT
-            // Send data -> this format is just for testing
+
             printf("%d - ", parameters.satellite_count);
 
-            xbee.sendPkt(MISSION_TIME);
+            xbee.sendParameter(MISSION_TIME);
             // xbee.sendPkt(PACKET_COUNT);
             // xbee.sendPkt(STATUS);
             // xbee.sendPkt(BATTERY_VOLTAGE);
 
             printf("- ");
 
-            xbee.sendPkt(IMU_ROLL);
-            xbee.sendPkt(IMU_PITCH);
+            xbee.sendParameter(IMU_ROLL);
+            xbee.sendParameter(IMU_PITCH);
             // printf("%ld(10^-3 m/s) ", parameters.imu_xvel);
             // printf("%ld(10^-3 m/s) ", parameters.imu_yvel);
             // xbee.sendPkt(IMU_ACCELERATION);
@@ -102,16 +127,17 @@ int main()
 
             if (parameters.satellite_count > 0)
             {
-                xbee.sendPkt(GNSS_LATITUDE);
-                xbee.sendPkt(GNSS_LONGITUDE);
-                xbee.sendPkt(GNSS_ALTITUDE);
+                xbee.sendParameter(GNSS_TIME);
+                xbee.sendParameter(GNSS_LATITUDE);
+                xbee.sendParameter(GNSS_LONGITUDE);
+                xbee.sendParameter(GNSS_ALTITUDE);
             }
 
             printf("- ");
 
-            xbee.sendPkt(BME_PRESSURE);
-            xbee.sendPkt(BME_ALTITUDE);
-            xbee.sendPkt(BME_TEMPERATURE);
+            xbee.sendParameter(BME_PRESSURE);
+            xbee.sendParameter(BME_ALTITUDE);
+            xbee.sendParameter(BME_TEMPERATURE);
 
             printf("\n");
 #endif
@@ -137,7 +163,7 @@ void update_xbee_parameters(uint32_t last_time)
     // GNSS data
     if (parameters.satellite_count > 0)
     {
-        xbee.setGNSSTime(GNSS.getHour(), GNSS.getMinute(), GNSS.getSecond());
+        xbee.setGNSSTime(parameters.gnss_time);
         xbee.setGNSSLatitude(parameters.gnss_latitude);
         xbee.setGNSSLongitude(parameters.gnss_longitude);
         xbee.setGNSSAltitude(parameters.gnss_altitude, parameters.gnss_altitude_MSL);
@@ -157,17 +183,23 @@ void update_xbee_parameters(uint32_t last_time)
 void read_data()
 {
     static uint8_t times = 0;
-
+    static uint32_t time1, time2;
     read_imu();
 
     if ((times % 5) == 0)
         read_bme();
 
     if ((times % 20) == 0)
+    {
+        // time1 = to_ms_since_boot(get_absolute_time());      //JFT
         read_gnss();
+        // time2 = to_ms_since_boot(get_absolute_time());      //JFT
+            
+        // printf("Read data time: %d ms\n", time2 - time1);   //JFT        
+    }
 
     times++;
- 
+
     if (times > 240)
         times = 0;
 }
@@ -176,7 +208,7 @@ void read_data()
 #define RAD_TO_DEG (180.0f / 3.14159265358979323846f)
 #define DEG_TO_RAD (1 / RAD_TO_DEG)
 #define GRAVITY (9.80665f)
-#define IMU_SAMPLING_RATE (200.0f)              // Hz
+#define IMU_SAMPLING_RATE (200.0f)             // Hz
 #define STATIC_ACCELEROMETER_THRESHOLD (0.12f) // m/s^2
 #define STATIC_GYROSCOPE_THRESHOLD (0.15f)     // m/s
 
@@ -194,11 +226,11 @@ void read_imu()
 
     gyro_dps[0] = (float)data.gyro_raw[0] / 131.0f;
     gyro_dps[1] = (float)data.gyro_raw[1] / 131.0f;
-    
+
     parameters.imu_roll = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
     parameters.imu_pitch = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
 
-    parameters.imu_accel_y = (accel_g[1] * (-GRAVITY)); // m/s^2
+    parameters.imu_accel_y = (accel_g[1] * (-GRAVITY));                                                                   // m/s^2
     parameters.imu_accel_y = (ABS(parameters.imu_accel_y) < STATIC_ACCELEROMETER_THRESHOLD) ? 0 : parameters.imu_accel_y; // m/s^2
 
     // ZUPT -> Zero Velocitu Update
@@ -218,16 +250,31 @@ void read_imu()
 
 void read_gnss()
 {
-    parameters.satellite_count = GNSS.getSIV();
+    // uint32_t time1, time2;
+    static bool first_time = true;
+    // time1 = to_ms_since_boot(get_absolute_time());
+
+    if (first_time)
+    {
+        parameters.satellite_count = GNSS.getSIV();
+        
+        if (parameters.satellite_count > 20)
+            parameters.satellite_count = 0;
+
+        if (parameters.satellite_count > 0)
+            first_time = false;
+    }
 
     if (parameters.satellite_count > 0)
     {
-        parameters.gnss_time = GNSS.getHour() * 10000 + GNSS.getMinute() * 100 + GNSS.getSecond();
+        parameters.gnss_time = (uint32_t)(GNSS.getHour() * 10000 + GNSS.getMinute() * 100 + GNSS.getSecond());
         parameters.gnss_latitude = GNSS.getLatitude();   // latitude +-90ª
         parameters.gnss_longitude = GNSS.getLongitude(); // longitude +-180ª
-        parameters.gnss_altitude = GNSS.getAltitude();
-        parameters.gnss_altitude_MSL = GNSS.getAltitudeMSL();
+        parameters.gnss_altitude = GNSS.getAltitude() / 1000;
+        parameters.gnss_altitude = GNSS.getAltitudeMSL();
     }
+    // time2 = to_ms_since_boot(get_absolute_time());
+    // printf("GNSS time: %d ms\n", time2 - time1);
 }
 
 // Returns the current pressure. Handy to have for calibration processes
@@ -270,42 +317,41 @@ Función que guarda estructuras en un buffer, y cuando este se llena, guarda est
 buffer en memoria flash.
 Recibe: La estructura con los datos actuales del sistema (Posición, altura, etc)
 Devuelve: La cantidad de veces que se escribió un sector en memoria
+
+Si se quedó sin memoria, va a devolver siempre la misma cantidad de veces que se
+guardó en el buffer la estructura, pero no se va a poder guardar más información.
+En este caso, todo lo que esté en el buffer, se va a perder si se apaga el sistema.
 */
 uint32_t saveData(packet data)
 {
     static uint8_t buff_count = 0;
     static uint32_t saves = 0;
-
-    printf("Saving data...\n");
-    sleep_ms(100);
-    printf("Buffer count: %d    ", buff_count);
-    sleep_ms(100);
-    printf("Saves: %d\n", saves);
-    sleep_ms(100);
+    static bool out_of_memory = false;
 
     if (buff_count < BUFFER_SIZE)
     {
         buffer_flash[buff_count] = data;
         buff_count++;
     }
-    else
+    else if (!out_of_memory) // Si el buffer se llenó y no se quedó sin memoria
     {
         // La idea es borrar los sectores a medida que necesitemos. Entran 16 páginas
         //(escrituras), por lo que cada 16 iteraciones borramos el siguiente sector
         if (saves % 16 == 0)
         {
-            printf("Erasing sector %d\n", saves / 16);
-            sleep_ms(100);
-            uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * (saves / 16 + 1));
+            uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * ((saves / 16) + 1));
+            if (erase_addr <= FLASH_CODE_END) // No borrar el sector de código
+            {
+                out_of_memory = true;
+                return saves;
+            }
 
             uint32_t ints = save_and_disable_interrupts();
             flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
             restore_interrupts(ints);
         }
         // Después de borrar (si fue necesario), guardamos el buffer en memoria
-        printf("Writing buffer %d\n", saves);
-        sleep_ms(100);
-        uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * (saves + 1));
+        uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * saves);
 
         uint32_t ints = save_and_disable_interrupts();
         flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
@@ -315,5 +361,19 @@ uint32_t saveData(packet data)
         buff_count = 0;
     }
     return saves;
-} // TODO: Fijarse que no sobreescriba la sección de código (contemplar ese caso)
-  // TODO: hardcodear el archivo build/pico_flash_region.ld
+}
+
+void readData(uint32_t n_pages)
+{
+    static packet *data_ptr = (packet *)(XIP_BASE + (FLASH_SIZE)-FLASH_PAGE_SIZE);
+
+    packet data[BUFFER_SIZE] = {0};
+    for (uint32_t j = 0; j < n_pages; j++)
+    {
+        for (uint8_t i = 0; i < BUFFER_SIZE; i++) // este for mandaría todas las estructuras, una por una, por el puerto serie
+        {
+            fwrite(data_ptr, sizeof(packet), 1, stdout); // TODO: a checkear que ande
+            printf("Packet %d: \n", i);
+        }
+    }
+}

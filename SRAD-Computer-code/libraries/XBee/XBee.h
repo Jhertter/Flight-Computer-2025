@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include "hardware/uart.h"
 
+#define DEBUG 0
+
 #define SIZE_PARAM (6) // 6 bytes for each parameter
 #define CANT_PARAM (14) // 12 parameters
 #define PKT_SIZE (CANT_PARAM * SIZE_PARAM) 
@@ -77,7 +79,7 @@ class XBee
         void setIMURoll(int16_t roll);
         void setIMUPitch(int16_t pitch);
         
-        void setGNSSTime(uint8_t hour, uint8_t minute, uint8_t second);
+        void setGNSSTime(uint32_t time);
         void setGNSSAltitude(int32_t altitude, int32_t altitudeMSL);
         void setGNSSLatitude(int32_t latitude);
         void setGNSSLongitude(int32_t longitude);
@@ -108,7 +110,7 @@ class XBee
         int32_t imu_pitch = 0;
     
         uint32_t gnss_time = 0;
-        uint32_t gnss_altitude = 0;
+        uint16_t gnss_altitude = 0;
         uint32_t gnss_latitude = 0;
         uint32_t gnss_longitude = 0;
     

@@ -72,9 +72,9 @@ void XBee::setIMURoll(int16_t roll)
     parseMsg(IMU_ROLL, DPOINT_ONE);
 }
 
-void XBee::setGNSSTime(uint8_t hour, uint8_t minute, uint8_t second)
+void XBee::setGNSSTime(uint32_t time)
 {
-    gnss_time = hour * 10000 + minute * 100 + second;
+    gnss_time = time;
     parseMsg(GNSS_TIME);
 }
 
@@ -138,11 +138,13 @@ void XBee::setBMETemperature(float temperature)
 void XBee::sendPkt()
 {
     for (int i=0; i<=PKT_SIZE; i++)
-    {
         uart_putc(uart_cfg.uart_id , pkt[i]);
-        // printf("%c", pkt[i]);
-    }
-    // printf("\n");
+
+#if DEBUG
+    for(int i=0; i<=PKT_SIZE; i++)
+        printf("%c", pkt[i]);
+    printf("\n");
+#endif
 }
 
 /**
@@ -154,7 +156,7 @@ void XBee::sendParameter(packet_index_t packet)
 {
     for (int i=0; i<SIZE_PARAM; i++)
     {
-        uart_putc(uart_cfg.uart_id, pkt[packet*SIZE_PARAM + i]);
+        // uart_putc(uart_cfg.uart_id, pkt[packet*SIZE_PARAM + i]);
         printf("%c", pkt[packet*SIZE_PARAM + i]);
     }
     // uart_putc(uart_cfg.uart_id, '\n');
