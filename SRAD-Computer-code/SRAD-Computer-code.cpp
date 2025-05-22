@@ -17,6 +17,8 @@ int main()
     gpio_set_function(PIN_UART_TX, GPIO_FUNC_UART);
     gpio_set_function(PIN_UART_RX, GPIO_FUNC_UART);
 
+    sleep_ms(500);
+
     // Initialize ICM-20948
     if (icm20948_init(&IMU_config) != 0)
     {
@@ -55,20 +57,31 @@ int main()
     }
     else
     {
-        GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS);
-        GNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS);
-        GNSS.setI2COutput(COM_TYPE_UBX);
-        if (GNSS.setNavigationFrequency(10))
+        sleep_ms(500);
+        if(!GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS) || !GNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS))
+            printf("GPS not enabled\n");
+
+        // sleep_ms(500);
+        // if(!GNSS.setI2COutput(COM_TYPE_UBX))
+        //     printf("GNSS I2C output not set\n");
+
+        sleep_ms(500);
+        if (GNSS.setNavigationFrequency(20))
+        // if (GNSS.setMeasurementRate(70))
             printf("GNSS nav Frequency: %d\n", GNSS.getNavigationFrequency());
         else
-            printf("Skill issue");
-
-        // GNSS.setNavigationRate(11);
-        // printf("Navigation Frequency: %d",GNSS.getNavigationFrequency());
-        // GNSS.setMeasurementRate(70);
-        // GNSS.setAutoPVTrate(11);
-        // GNSS.setHNRNavigationRate(11);
-        // GNSS.setAutoHNRPVTrate(11);
+            printf("Skill issue GNSS nav Frequency\n");
+    
+        sleep_ms(500);
+        if (!GNSS.setAutoPVTrate(20))
+            printf("Skill issue AUTO PVT rate\n");
+        sleep_ms(500);
+        if (!GNSS.setHNRNavigationRate(15))
+            printf("Skill issue HNR Navigation rate\n");
+        sleep_ms(500);
+        // if (!GNSS.setAutoHNRPVTrate(15))
+        //     printf("Skill issue AUTO HNR PVT rate\n");
+        // sleep_ms(500);
     
     }
     init_leds();
@@ -79,38 +92,27 @@ int main()
         static uint32_t last_time = 0;
         static uint32_t last_time_xbee = 0;
         uint32_t time1, time2;
-        
+
         if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
         {
             last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
             
-            // time1 = to_ms_since_boot(get_absolute_time());      //JFT
             read_data();
-            // time2 = to_ms_since_boot(get_absolute_time());      //JFT
-            
-            // printf("Read data time: %d ms\n", time2 - time1);   //JFT
-
-            // time1 = to_ms_since_boot(get_absolute_time());      //JFT
             update_xbee_parameters(last_time);
-            // time2 = to_ms_since_boot(get_absolute_time());      //JFT
-            
-            // printf("Xbee time: %d ms\n", time2 - time1);        //JFT
         }
-
+        
         if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 100)
         {
-            last_time_xbee = to_ms_since_boot(get_absolute_time());     //JFT
+            last_time_xbee = to_ms_since_boot(get_absolute_time()); 
             xbee.sendPkt();
-            // time2 = to_ms_since_boot(get_absolute_time());              //JFT
-
-            // printf("Xbee time: %d ms\n", time2 - last_time_xbee);       //JFT
+            xbee.setPacketCount();
 
 #if PRINT_DEBUG_PKT
 
             printf("%d - ", parameters.satellite_count);
 
             xbee.sendParameter(MISSION_TIME);
-            // xbee.sendPkt(PACKET_COUNT);
+            xbee.sendParameter(PACKET_COUNT);
             // xbee.sendPkt(STATUS);
             // xbee.sendPkt(BATTERY_VOLTAGE);
 
@@ -157,7 +159,6 @@ void update_xbee_parameters(uint32_t last_time)
 {
     // Mission data
     xbee.setMissionTime(last_time);
-    xbee.setPacketCount();
     // xbee.setBatteryVoltage(parameters.battery_voltage);
 
     // GNSS data
@@ -250,9 +251,7 @@ void read_imu()
 
 void read_gnss()
 {
-    // uint32_t time1, time2;
     static bool first_time = true;
-    // time1 = to_ms_since_boot(get_absolute_time());
 
     if (first_time)
     {
@@ -273,8 +272,6 @@ void read_gnss()
         parameters.gnss_altitude = GNSS.getAltitude() / 1000;
         parameters.gnss_altitude = GNSS.getAltitudeMSL();
     }
-    // time2 = to_ms_since_boot(get_absolute_time());
-    // printf("GNSS time: %d ms\n", time2 - time1);
 }
 
 // Returns the current pressure. Handy to have for calibration processes

@@ -751,13 +751,13 @@ bool SFE_UBLOX_GNSS::isConnected(uint16_t maxWait)
             return false; // Sensor did not ack
         }
     }
-    
+
     // Query port configuration to see whether we get a meaningful response
     // We could simply request the config for any port but, just for giggles, let's request the config for most appropriate port
     sfe_ublox_status_e result;
     if (commType == COMM_TYPE_I2C)
         result = sendCommand(&packetCfg, maxWait); // Poll the navigation rate
-        // return (getPortSettingsInternal(COM_PORT_I2C, maxWait));
+    // return (getPortSettingsInternal(COM_PORT_I2C, maxWait));
 
     if ((result == SFE_UBLOX_STATUS_DATA_RECEIVED) || (result == SFE_UBLOX_STATUS_DATA_OVERWRITTEN))
         return (true);
@@ -1572,7 +1572,7 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
             {
                 if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
                 {
-                    printf("process: non-auto NMEA message");
+                    printf("process: non-auto NMEA message\n");
                 }
             }
 
@@ -4248,86 +4248,86 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendI2cCommand(ubxPacket *outgoingUBX, uint16
 
     // while (bytesLeftToSend > 0)
     // {
-        // uint16_t len = bytesLeftToSend; // How many bytes should we actually write?
-        // if (len > i2cTransactionSize)   // Limit len to i2cTransactionSize
-        //     len = i2cTransactionSize;
+    // uint16_t len = bytesLeftToSend; // How many bytes should we actually write?
+    // if (len > i2cTransactionSize)   // Limit len to i2cTransactionSize
+    //     len = i2cTransactionSize;
 
-        // bytesLeftToSend -= len; // Calculate how many bytes will be left after we do this write
+    // bytesLeftToSend -= len; // Calculate how many bytes will be left after we do this write
 
-        // // If bytesLeftToSend is zero, that's OK.
-        // // If bytesLeftToSend is >= 2, that's OK.
-        // // But if bytesLeftToSend is 1, we need to adjust len to make sure we write at least 2 bytes in the final write
-        // if (bytesLeftToSend == 1)
-        // {
-        //     len -= 1;             // Decrement len by 1
-        //     bytesLeftToSend += 1; // Increment bytesLeftToSend by 1
-        // }
+    // // If bytesLeftToSend is zero, that's OK.
+    // // If bytesLeftToSend is >= 2, that's OK.
+    // // But if bytesLeftToSend is 1, we need to adjust len to make sure we write at least 2 bytes in the final write
+    // if (bytesLeftToSend == 1)
+    // {
+    //     len -= 1;             // Decrement len by 1
+    //     bytesLeftToSend += 1; // Increment bytesLeftToSend by 1
+    // }
 
-        // msgLen += len; // Increment msgLen by the number of bytes we are about to write
+    // msgLen += len; // Increment msgLen by the number of bytes we are about to write
 
-        i2c_write_blocking(_i2cPort, _gpsI2Caddress, (uint8_t *)outgoingUBX->payload[0], bytesLeftToSend, true);
-        // startSpot += bytesLeftToSend;
+    i2c_write_blocking(_i2cPort, _gpsI2Caddress, outgoingUBX->payload, bytesLeftToSend, true);
+    // startSpot += bytesLeftToSend;
 
-        ///////////////// cosas de antes /////////////////////
-        // bytesLeftToSend--;
+    ///////////////// cosas de antes /////////////////////
+    // bytesLeftToSend--;
 
-        // if (bytesSent == 0) // Is this the first write? If it is, write the header bytes
-        // {
-        //     bytesSent += 6;
+    // if (bytesSent == 0) // Is this the first write? If it is, write the header bytes
+    // {
+    //     bytesSent += 6;
 
-        //     uint16_t x = 0;
-        //     // Write a portion of the payload to the bus.
-        //     // Keep going until we reach the end of the payload (x == outgoingUBX->len)
-        //     // or we've sent as many bytes as we can in this transmission (bytesSent == len).
-        //     for (; (x < outgoingUBX->len) && (bytesSent < len); x++)
-        //     {
-        //         reg[x + msgLen] = outgoingUBX->payload[startSpot + x];
-        //         bytesSent++;
-        //         msgLen++;
-        //     }
-        //     startSpot += x;
+    //     uint16_t x = 0;
+    //     // Write a portion of the payload to the bus.
+    //     // Keep going until we reach the end of the payload (x == outgoingUBX->len)
+    //     // or we've sent as many bytes as we can in this transmission (bytesSent == len).
+    //     for (; (x < outgoingUBX->len) && (bytesSent < len); x++)
+    //     {
+    //         reg[x + msgLen] = outgoingUBX->payload[startSpot + x];
+    //         bytesSent++;
+    //         msgLen++;
+    //     }
+    //     startSpot += x;
 
-        //     // Can we write both checksum bytes?
-        //     // We can send both bytes now if we have exactly 2 bytes left
-        //     // to be sent in this transmission (bytesSent == (len - 2)).
-        //     if (bytesSent == (len - 2))
-        //     {
-        //         // Write checksum
-        //         reg[msgLen++] = outgoingUBX->checksumA; // Checksum A
-        //         reg[msgLen++] = outgoingUBX->checksumB; // Checksum B
-        //         bytesSent += 2;
-        //     }
-        // }
-        // else // Keep writing payload bytes. Write the checksum at the right time.
-        // {
-        //     uint16_t x = 0;
-        //     // Write a portion of the payload to the bus.
-        //     // Keep going until we've sent as many bytes as we can in this transmission (x == len)
-        //     // or until we reach the end of the payload ((startSpot + x) == (outgoingUBX->len))
-        //     for (; (x < len) && ((startSpot + x) < (outgoingUBX->len)); x++)
-        //     {
-        //         reg[x + msgLen] = outgoingUBX->payload[startSpot + x];
-        //         bytesSent++;
-        //     }
-        //     startSpot += x;
+    //     // Can we write both checksum bytes?
+    //     // We can send both bytes now if we have exactly 2 bytes left
+    //     // to be sent in this transmission (bytesSent == (len - 2)).
+    //     if (bytesSent == (len - 2))
+    //     {
+    //         // Write checksum
+    //         reg[msgLen++] = outgoingUBX->checksumA; // Checksum A
+    //         reg[msgLen++] = outgoingUBX->checksumB; // Checksum B
+    //         bytesSent += 2;
+    //     }
+    // }
+    // else // Keep writing payload bytes. Write the checksum at the right time.
+    // {
+    //     uint16_t x = 0;
+    //     // Write a portion of the payload to the bus.
+    //     // Keep going until we've sent as many bytes as we can in this transmission (x == len)
+    //     // or until we reach the end of the payload ((startSpot + x) == (outgoingUBX->len))
+    //     for (; (x < len) && ((startSpot + x) < (outgoingUBX->len)); x++)
+    //     {
+    //         reg[x + msgLen] = outgoingUBX->payload[startSpot + x];
+    //         bytesSent++;
+    //     }
+    //     startSpot += x;
 
-        //     // Can we write both checksum bytes?
-        //     // We can send both bytes if we have exactly 2 bytes left to be sent (bytesSent == (bytesToSend - 2))
-        //     // and if there is room for 2 bytes in this transmission
-        //     if ((bytesSent == (bytesToSend - 2)) && (x == (len - 2)))
-        //     {
-        //         // Write checksum
-        //         reg[msgLen++] = outgoingUBX->checksumA; // Checksum A
-        //         reg[msgLen++] = outgoingUBX->checksumB; // Checksum B
-        //         bytesSent += 2;
-        //     }
-        // }
+    //     // Can we write both checksum bytes?
+    //     // We can send both bytes if we have exactly 2 bytes left to be sent (bytesSent == (bytesToSend - 2))
+    //     // and if there is room for 2 bytes in this transmission
+    //     if ((bytesSent == (bytesToSend - 2)) && (x == (len - 2)))
+    //     {
+    //         // Write checksum
+    //         reg[msgLen++] = outgoingUBX->checksumA; // Checksum A
+    //         reg[msgLen++] = outgoingUBX->checksumB; // Checksum B
+    //         bytesSent += 2;
+    //     }
+    // }
 
-        // if (bytesSent < bytesToSend) // Do we need to go round the loop again?
-        // {
-        //     if (_i2cPort->endTransmission(_i2cStopRestart) != 0) // Don't release bus unless we have to
-        //         return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE);      // Sensor did not ACK
-        // }
+    // if (bytesSent < bytesToSend) // Do we need to go round the loop again?
+    // {
+    //     if (_i2cPort->endTransmission(_i2cStopRestart) != 0) // Don't release bus unless we have to
+    //         return (SFE_UBLOX_STATUS_I2C_COMM_FAILURE);      // Sensor did not ACK
+    // }
     // }
 
     reg[0] = outgoingUBX->checksumA; // Checksum A
@@ -6585,7 +6585,10 @@ bool SFE_UBLOX_GNSS::setPortOutput(uint8_t portID, uint8_t outStreamSettings, ui
 {
     // Get the current config values for this port ID
     if (getPortSettings(portID, maxWait) == false)
+    {
+        printf("setPortOutput: getPortSettings failed!\n");
         return (false); // Something went wrong. Bail.
+    }
 
     packetCfg.cls = UBX_CLASS_CFG;
     packetCfg.id = UBX_CFG_PRT;
@@ -16195,7 +16198,7 @@ bool SFE_UBLOX_GNSS::setNavigationFrequency(uint8_t navFreq, uint16_t maxWait)
     // This will load the payloadCfg array with current settings of the given register
     if (sendCommand(&packetCfg, maxWait) != SFE_UBLOX_STATUS_DATA_RECEIVED) // We are expecting data and an ACK
     {
-        return (false);                                                     // If command send fails then bail
+        return (false); // If command send fails then bail
     }
 
     uint16_t measurementRate = 1000 / navFreq;
@@ -16204,9 +16207,8 @@ bool SFE_UBLOX_GNSS::setNavigationFrequency(uint8_t navFreq, uint16_t maxWait)
     payloadCfg[0] = measurementRate & 0xFF; // measRate LSB
     payloadCfg[1] = measurementRate >> 8;   // measRate MSB
 
-
     // veo que nunca cambia el len a más de 0
-    packetCfg.len = 6; // Set the length of the packet to 6 bytes
+    packetCfg.len = 6;                                                                // Set the length of the packet to 6 bytes  ---> hdp los de sparkFun
     bool result = ((sendCommand(&packetCfg, maxWait)) == SFE_UBLOX_STATUS_DATA_SENT); // We are only expecting an ACK
 
     flushCFGRATE(); // Mark the polled measurement and navigation rate data as stale
@@ -16265,6 +16267,7 @@ bool SFE_UBLOX_GNSS::setMeasurementRate(uint16_t rate, uint16_t maxWait)
         return (false);                                                     // If command send fails then bail
 
     // payloadCfg is now loaded with current bytes. Change only the ones we need to
+    packetCfg.len = 6;
     payloadCfg[0] = rate & 0xFF; // measRate LSB
     payloadCfg[1] = rate >> 8;   // measRate MSB
 
@@ -17829,6 +17832,7 @@ bool SFE_UBLOX_GNSS::setHNRNavigationRate(uint8_t rate, uint16_t maxWait)
         return (false);
 
     // Load the new navigation rate into payloadCfg
+    packetCfg.len = 4;
     payloadCfg[0] = rate;
 
     // Update the navigation rate
