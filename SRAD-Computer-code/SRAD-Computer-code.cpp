@@ -339,7 +339,7 @@ void readData(uint32_t n_pages)
     {
         for (uint8_t i = 0; i < BUFFER_SIZE; i++) // este for mandaría todas las estructuras, una por una, por el puerto serie
         {
-            fwrite(data_ptr, sizeof(packet), 1, stdout); // TODO: a checkear que ande
+            fwrite(data_ptr, sizeof(packet), 1, stdout); // TODO: a checkear que ande. Spoiler: no anda
             printf("Packet %d: \n", i);
         }
     }
@@ -352,8 +352,9 @@ void saveGlobalData(flash_global_vars_t data)
     uint32_t ints = save_and_disable_interrupts();
     flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
     restore_interrupts(ints);
+
     ints = save_and_disable_interrupts();
-    flash_range_program(prog_addr, (uint8_t *)&data, sizeof(flash_global_vars_t));
+    flash_range_program(prog_addr, (uint8_t *)&global_vars, sizeof(flash_global_vars_t));
     restore_interrupts(ints);
 }
 
@@ -382,9 +383,8 @@ void waitForStart(void)
 	if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
     {
         parameters.status = LAUNCH;
-        //TODO:     ACA GUARDAR LOS GLOBALES EN FLASH
-        //saveGlobalData(parameters);
         global_vars.last_status = parameters.status;
+        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
         calibrateRocket();
         return;
     }
@@ -440,7 +440,8 @@ void waitForLaunch(void)
         if(parameters.imu_accel_y > 0)
         {
             parameters.status = ASCENT;
-            //saveGlobalData(parameters);   //TODO: guardar en flash
+            global_vars.last_status = ASCENT;
+            saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
             //save_falsh = true;            //TODO: ver si implementamos este flag
         }
 	}
@@ -453,7 +454,11 @@ void ascentRoutine(void)
     static uint32_t last_time = 0;
     
     if (parameters.gnss_altitude > 2000)
+    {
         parameters.status = APOGEE;
+        global_vars.last_status = APOGEE;
+        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+    }
     
 	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
 	{
@@ -461,7 +466,7 @@ void ascentRoutine(void)
 		
 		read_data();
 		update_xbee_parameters(last_time);
-        // saveData(parameters); //TODO: guardar en flash
+        saveData(parameters); //guardado de datos actuales en flash
 	}
 
 	telemetry();
@@ -540,7 +545,9 @@ void apogeeRoutine(void)
 
     if (parameters.imu_vel_y < 0)   // hasta que no funcione del todo bien la velocidad, calcular altura
     {
-        
+        parameters.status = DESCENT;
+        global_vars.last_status = DESCENT;
+        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
     }
 
 	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
@@ -550,8 +557,8 @@ void apogeeRoutine(void)
 		read_data();
 		update_xbee_parameters(last_time);
 
-        //  save flash
-
+        saveData(parameters);                               //Guardado de datos actuales en flash
+  
         // airbrake();
 	}
     telemetry();
@@ -567,14 +574,21 @@ void descentRoutine(void)
 	// parameters.status = RECOVERY;
     // standByMode();
 
-    // if ()
+    if (parameters.imu_vel_y > -0.05 || parameters.imu_vel_y < 0.05) //Si está descendiendo lo suficientemente lento como para decir que aterrizó
+    {
+        parameters.status = RECOVERY;
+        global_vars.last_status = RECOVERY;
+        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+    }
 
 	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
 	{
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 		
 		read_data();
-		update_xbee_parameters(last_time);
+		update_xbee_parameters(last_time);        
+        saveData(parameters);                               //Guardado de datos actuales en flash
+
 	}
     telemetry();
 }
