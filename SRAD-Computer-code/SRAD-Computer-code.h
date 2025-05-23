@@ -28,6 +28,8 @@
 #define PIN_UART_TX 24
 #define PIN_UART_RX 25
 
+#define PIN_AIRBRAKE 29
+
 #define UART_ID uart1
 #define UART_BAUD 115200
 #define UART_STOP_BITS 1
@@ -132,5 +134,6 @@ void apogeeRoutine(void);
 void descentRoutine(void);
 void recoverySignal(void);
 void standByMode(void); 
+void airbrake_payload(bool payload = false);
 
 #endif 

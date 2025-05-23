@@ -13269,7 +13269,7 @@
 		)
 		(uuid "112ba796-a519-4b55-a857-37373431b7ac")
 	)
-	(label "servo"
+	(label "AIRBRAKE"
 		(at 339.09 176.53 0)
 		(effects
 			(font
@@ -13329,7 +13329,7 @@
 		)
 		(uuid "220eb79b-06c8-4785-b973-9d6590a582a2")
 	)
-	(label "servo"
+	(label "AIRBRAKE"
 		(at 340.36 152.4 180)
 		(effects
 			(font

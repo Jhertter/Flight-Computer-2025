@@ -11,6 +11,11 @@ int main()
     stdio_init_all();
     init_leds();
 
+    // Init airbrake&payload pin
+    gpio_init(PIN_AIRBRAKE);
+    gpio_set_dir(PIN_AIRBRAKE, GPIO_OUT);
+    gpio_put(PIN_AIRBRAKE, 0);
+
     // Initialize I2C Bus
     gpio_init(PIN_I2C_SCL);
     gpio_init(PIN_I2C_SDA);
@@ -547,7 +552,7 @@ void apogeeRoutine(void)
 
         //  save flash
 
-        airbrake();
+        // airbrake();
 	}
     telemetry();
 }
@@ -593,5 +598,37 @@ void recoverySignal(void)
  */
 void standByMode(void)
 {
+
+}
+
+
+/**
+ * @brief   PIN_AIRBRAKE = 1 : airbrake closed
+ *          PIN_AIRBRAKE = 0 : airbrake open
+ * 
+ * @param payload 
+ */
+void airbrake_payload(bool payload = false)
+{
+    static bool pin_state = false;
+    static int16_t poly_curve_1 = 0;
+    static int16_t poly_curve_3 = 0;
+
+    pin_state = gpio_get(PIN_AIRBRAKE);
+    poly_curve_1 = (int16_t)(-1.209e-7 * (float)pow(parameters.imu_vel_y, 4) + 1.479e-4 * pow(parameters.imu_vel_y,3) - 5.82e-2
+* pow(parameters.imu_vel_y,2) + 3053);
+    poly_curve_3 = (int16_t)(1.088e-7 * (float)pow(parameters.imu_vel_y, 4) + 3.179e-5 * pow(parameters.imu_vel_y,3) - 5.009e-2
+* pow(parameters.imu_vel_y,2) + 3047);
+
+
+    if (payload)
+        gpio_put(PIN_AIRBRAKE, 1);
+    else
+    {
+        if ((parameters.gnss_altitude > poly_curve_3) && pin_state)
+            gpio_put(PIN_AIRBRAKE, 0);  // Open airprake 
+        else if ((parameters.gnss_altitude < poly_curve_1) && !pin_state)
+            gpio_put(PIN_AIRBRAKE, 1);  // Close airbrake
+    }
 
 }
