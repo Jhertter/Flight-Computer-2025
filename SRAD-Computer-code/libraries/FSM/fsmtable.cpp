@@ -14,6 +14,10 @@ extern STATE mission_complete[];
 extern STATE reset_FSM[];
 #endif
 
+// Variables globales
+
+extern XBee xbee;
+
 // prototipos
 
 static void do_nothing(void);
@@ -21,11 +25,16 @@ static void do_nothing(void);
 static void reset(void);
 #endif
 static void waitForStart(void);
-static void startTransmission(void);
+static void calibrateRocket(void);
+static void waitForLaunch(void);
 static void telemetry(void);
-static void apogee_routine(void);
-static void recovery_signal(void);
-static void stand_by_mode(void);
+static void ascentRoutine(void);
+static void apogeeRoutine(void);
+static void descentRoutine(void);
+static void recoverySignal(void);
+static void standByMode(void);
+
+static fsm_actions_t event_action = STAY;
 
 /**
  * @brief 	Waits for signal to start the mission.
@@ -35,7 +44,7 @@ static void stand_by_mode(void);
 STATE pre_launch[] =
 {
 	{STAY, "pre_launch", pre_launch, waitForStart},
-	{MOVE, "pre_launch", launch, startTransmission}
+	{MOVE, "pre_launch", launch, calibrateRocket}
 #if DEBUG_FSM
 	,
 	{RESET_MISSION, "pre_launch", reset_FSM, do_nothing}
@@ -50,7 +59,7 @@ STATE pre_launch[] =
  */
 STATE launch[] =
 {
-	// {STAY, launch, do_nothing}do_nothing,
+	{STAY, "launch", launch, waitForLaunch},
 	{MOVE, "launch", ascent, do_nothing}
 #if DEBUG_FSM
 	,
@@ -64,7 +73,7 @@ STATE launch[] =
  */
 STATE ascent[] =
 {
-	{STAY, "ascent", ascent, telemetry},
+	{STAY, "ascent", ascent, ascentRoutine},
 	{MOVE, "ascent", apogee, do_nothing}
 #if DEBUG_FSM
 	,
@@ -78,7 +87,7 @@ STATE ascent[] =
  */
 STATE apogee[] =
 {
-	{STAY, "apogee", apogee, apogee_routine},
+	{STAY, "apogee", apogee, apogeeRoutine},
 	{MOVE, "apogee", descent, do_nothing}
 #if DEBUG_FSM
 	,
@@ -92,7 +101,7 @@ STATE apogee[] =
  */
 STATE descent[] =
 {
-	{STAY, "descent", descent, telemetry},
+	{STAY, "descent", descent, descentRoutine},
 	{MOVE, "descent", landing, do_nothing}
 #if DEBUG_FSM
 	,
@@ -106,7 +115,7 @@ STATE descent[] =
  */
 STATE landing[] =
 {
-	{MOVE, "landing", recovery, stand_by_mode}
+	{MOVE, "landing", recovery, standByMode}
 #if DEBUG_FSM
 	,
 	{RESET_MISSION, "landing", reset_FSM, do_nothing}
@@ -120,7 +129,7 @@ STATE landing[] =
  */
 STATE recovery[] =
 {
-	{STAY, "recovery", recovery, recovery_signal},
+	{STAY, "recovery", recovery, recoverySignal},
 	{MOVE, "recovery", mission_complete, do_nothing}
 #if DEBUG_FSM
 	,
@@ -159,57 +168,7 @@ STATE *FSM_GetInitState(void)
 
 ///=========Rutinas de accion===============
 
-/**
- * @brief Waits for START signal from ground station. Sends ACK.
- *
- */
-static void waitForStart(void)
-{
-	return;
-}
 
-/**
- * @brief Starts transmission and activates payload.
- *
- */
-static void startTransmission(void)
-{
-}
-
-/**
- * @brief Transmits telemetry through xbee
- *
- */
-static void telemetry(void)
-{
-	// xbee.sendPkt();
-}
-
-/**
- * @brief 	When 2000m are reached, starts airbrake control.
- * 			Stores max height.
- *
- */
-static void apogee_routine(void)
-{
-}
-
-/**
- * @brief 	Sends absolute coordinates and time to GS.
- * 			Starts max altitude protocol.
- *
- */
-static void recovery_signal(void)
-{
-}
-
-/**
- * @brief 	Shuts down sensors -> enters low energy mode.
- *
- */
-static void stand_by_mode(void)
-{
-}
 
 static void do_nothing(void)
 {

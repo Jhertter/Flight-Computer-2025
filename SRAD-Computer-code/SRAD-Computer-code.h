@@ -14,7 +14,7 @@
 #include "libraries/bmp_280/bmp280.h"
 #include "libraries/XBee/XBee.h"
 
-#define PRINT_DEBUG_PKT 1
+#define PRINT_DEBUG_PKT 0
 
 #define I2C_FREQUENCY 400000
 
@@ -44,6 +44,7 @@ const static int gpio_array[] = {
     PIN_LED_ERROR};
 
 const static int16_t accel_bias [3] = {96, -94, 5};
+static int16_t altitude_bias = 0;
 
 i2c_inst_t i2c_setUp = {i2c0_hw, false};
 icm20948_config_t IMU_config = {0x69, 0x0C, &i2c_setUp};
@@ -52,13 +53,16 @@ madgwick_ahrs_t filter = {0.5f, {1.0f, 0.0f, 0.0f, 0.0f}};
 BMP280 BME(&i2c_setUp);
 SFE_UBLOX_GNSS GNSS;
 
+
 xbee_uart_cfg_t uart_cfg = {UART_ID, UART_BAUD, UART_STOP_BITS, UART_DATA_BITS, UART_PARITY};
-XBee xbee(uart_cfg, to_ms_since_boot(get_absolute_time()));
 
 const uint8_t *flashBase = (const uint8_t *)(XIP_BASE + FLASH_OFFSET);
 
 typedef struct
 {
+    uint8_t status;
+    uint8_t battery_level = 0;
+
     uint32_t bme_pressure = 0;
     uint32_t bme_temperature = 0;
     uint32_t bme_altitude = 0;
@@ -76,10 +80,27 @@ typedef struct
     int32_t imu_vel_y = 0;
 } packet;
 
+typedef struct {
+    uint8_t last_status;
+    int32_t intial_lat;
+    int32_t intial_long;
+    int32_t final_lat;
+    int32_t final_long;
+    uint32_t mission_duration;
+    int16_t max_altitude;
+    uint32_t cant_pages;
+} flash_global_vars_t;
+
+// typedef enum {
+// 	RESET_MISSION = 0,
+// 	MOVE,
+// 	STAY,
+// } fsm_actions_t;
+
 #define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE / sizeof(packet)))
 #define FLASH_SIZE ((uint32_t)(16 * 1024 * 1024))
 
-packet parameters = {0};
+
 
 void read_data();
 void update_xbee_parameters(uint32_t last_time);
@@ -94,8 +115,22 @@ static float ground_hP = 0;
 void gpio_toggle(int pin);
 void init_leds();
 
-packet buffer_flash[BUFFER_SIZE] = {0};
+packet buffer_flash[BUFFER_SIZE];
 uint32_t saveData(packet data);
 void readData(uint32_t n_buffers);
+void saveGlobalData(flash_global_vars_t data);
+
+/*******************
+ *  State machine
+ *******************/
+void waitForStart(void);
+void calibrateRocket(void);
+void waitForLaunch(void);
+void telemetry(void);
+void ascentRoutine(void);
+void apogeeRoutine(void);
+void descentRoutine(void);
+void recoverySignal(void);
+void standByMode(void); 
 
 #endif 

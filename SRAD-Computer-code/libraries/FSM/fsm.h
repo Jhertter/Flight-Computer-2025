@@ -9,16 +9,12 @@
 #define FSM_H_
 
 #define FIN_TABLA 0xFF
-#define DEBUG_FSM 1
+#define DEBUG_FSM 0
 
 typedef unsigned char BYTE;
 typedef struct state_diagram_edge STATE;
 
-typedef enum {
-	RESET_MISSION = 0,
-	MOVE,
-	STAY,
-} fsm_actions_t;
+
 
 struct state_diagram_edge
 {
@@ -29,6 +25,6 @@ struct state_diagram_edge
 };
 
 // Interfaz
-STATE *fsm(STATE *p_tabla_estado, uint32_t evento_actual);
+STATE *fsm(STATE *p_tabla_estado, fsm_actions_t evento_actual);
 
 #endif /* FSM_H_ */

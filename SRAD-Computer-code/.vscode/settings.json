@@ -41,6 +41,8 @@
         "cmath": "cpp",
         "memory": "c",
         "random": "c",
-        "optional": "c"
+        "optional": "c",
+        "fsmtable.h": "c",
+        "srad-computer-code.h": "c"
     }
 }

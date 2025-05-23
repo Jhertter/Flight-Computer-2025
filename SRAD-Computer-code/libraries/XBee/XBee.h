@@ -12,6 +12,8 @@
 #define CANT_PARAM (14) // 12 parameters
 #define PKT_SIZE (CANT_PARAM * SIZE_PARAM) 
 #define PKT_TERMINATOR ('\n') // '\n' terminator
+#define START_BYTE (0xDE)
+
 
 typedef struct {
     uart_inst_t * uart_id = uart1;
@@ -22,7 +24,7 @@ typedef struct {
 } xbee_uart_cfg_t;
 
 // PACKET SHAPE: 
-// <MISSION_TIME>,<PACKET_COUNT>,<STATUS>,<ALTITUDE>,<TILT>, <GPS_LATITUDE>,<GPS_LONGITUDE>,<GPS_ALTITUDE>,<ACCELERATION>,<TEMPERATURE>,<BATTERY_VOLTAGE>
+// <MISSION_TIME>,<PACKET_COUNT>,<STATUS>,<ALTITUDE>,<TILT>, <GPS_LATITUDE>,<GPS_LONGITUDE>,<GPS_ALTITUDE>,<ACCELERATION>,<TEMPERATURE>,<battery_level>
 
 typedef enum {
     PRE_LAUNCH = 0,
@@ -46,7 +48,7 @@ typedef enum {
     MISSION_TIME = 0,
     PACKET_COUNT,
     STATUS,
-    BATTERY_VOLTAGE,
+    BATTERY_LEVEL,
 
     IMU_Y_VEL,
     IMU_ROLL,
@@ -92,6 +94,8 @@ class XBee
         void parseMsg(packet_index_t packet, dPoint_t d_point = DPOINT_NONE);
         void sendParameter(packet_index_t packet);
         void sendPkt();
+
+        bool receiveStartSignal();
         
     private:
         char pkt[PKT_SIZE + 1] = {0}; // +1 for the '\n' terminator
@@ -102,8 +106,8 @@ class XBee
         
         uint32_t mission_time = 0;
         uint16_t packet_count = 0;
-        uint8_t battery_voltage = 0;
-        uint16_t status = PRE_LAUNCH;
+        uint8_t battery_level = 0;
+        MissionStatus_t status = PRE_LAUNCH;
         
         uint32_t imu_y_vel = 0;
         int32_t imu_roll = 0;
@@ -122,7 +126,7 @@ class XBee
             &mission_time,
             &packet_count,
             &status,
-            &battery_voltage,
+            &battery_level,
             
             &imu_y_vel,
             &imu_roll,

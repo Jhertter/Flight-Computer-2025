@@ -50,8 +50,8 @@ void XBee::setStatus(MissionStatus_t m_status)
 
 void XBee::setBatteryVoltage(char voltage)
 {
-    battery_voltage = voltage;
-    parseMsg(BATTERY_VOLTAGE);
+    battery_level = voltage;
+    parseMsg(BATTERY_LEVEL);
 }
 
 void XBee::setIMUVerticalVel(int32_t vel)
@@ -208,3 +208,20 @@ void XBee::clearPkt(packet_index_t packet)
     for (int i=0; i<SIZE_PARAM; i++)
         pkt[packet*SIZE_PARAM] = 0;
 }
+
+bool XBee::receiveStartSignal()
+{
+    if (uart_is_readable(uart_cfg.uart_id))
+    {
+        if(uart_getc(uart_cfg.uart_id) == START_BYTE)
+        {
+            uart_puts(uart_cfg.uart_id, "ACK\n");
+            return true;
+        }
+        
+        return false;
+    }
+    else
+        return false;
+}
+
