@@ -79,13 +79,13 @@ typedef struct
     int16_t imu_roll = 0;
     int16_t imu_pitch = 0;
     int32_t imu_accel_y = 0;
-    int32_t imu_vel_y = 0;
+    int32_t imu_vel_y = 0;  // cm/s
 } packet;
 
 typedef struct {
     uint8_t last_status;
-    int32_t intial_lat;
-    int32_t intial_long;
+    int32_t initial_lat;
+    int32_t initial_long;
     int32_t final_lat;
     int32_t final_long;
     uint32_t mission_duration;
@@ -102,16 +102,13 @@ typedef struct {
 #define BUFFER_SIZE ((uint8_t)(FLASH_PAGE_SIZE / sizeof(packet)))
 #define FLASH_SIZE ((uint32_t)(16 * 1024 * 1024))
 
+void readData();
+void updateXbeeParameters(uint32_t last_time);
 
-
-void read_data();
-void update_xbee_parameters(uint32_t last_time);
-
-void calibrate_bme(void);
-
-void read_imu();
-void read_gnss();
-void read_bme();
+void readIMU();
+void readGNSS();
+void readBME();
+void calibrateBME(void);
 static float ground_hP = 0;
 
 void gpio_toggle(int pin);
@@ -119,7 +116,7 @@ void init_leds();
 
 packet buffer_flash[BUFFER_SIZE];
 uint32_t saveData(packet data);
-void readData(uint32_t n_buffers);
+void readFlash(uint32_t n_pages);
 void saveGlobalData(flash_global_vars_t data);
 
 /*******************
@@ -135,5 +132,6 @@ void descentRoutine(void);
 void recoverySignal(void);
 void standByMode(void); 
 void airbrake_payload(bool payload = false);
+void calculateVelocity(float accel_g_y, float gyro_dps_y);
 
 #endif 

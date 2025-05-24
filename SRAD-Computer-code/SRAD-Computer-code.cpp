@@ -120,7 +120,6 @@ int main()
                 recoverySignal();
                 break;
         }
-
     }
 }
 
@@ -132,7 +131,7 @@ void gpio_toggle(int pin)
         gpio_put(pin, 1);
 }
 
-void update_xbee_parameters(uint32_t last_time)
+void updateXbeeParameters(uint32_t last_time)
 {
     // Mission data
     xbee.setMissionTime(last_time);
@@ -158,16 +157,16 @@ void update_xbee_parameters(uint32_t last_time)
     xbee.setIMUVerticalVel(parameters.imu_vel_y);
 }
 
-void read_data()
+void readData()
 {
     static uint8_t times = 0;
-    read_imu();
+    readIMU();
 
     if ((times % 5) == 0)
-        read_bme();
+        readBME();
 
     if ((times % 20) == 0)
-        read_gnss();
+        readGNSS();
 
     times++;
 
@@ -183,7 +182,7 @@ void read_data()
 #define STATIC_ACCELEROMETER_THRESHOLD (0.12f) // m/s^2
 #define STATIC_GYROSCOPE_THRESHOLD (0.15f)     // m/s
 
-void read_imu()
+void readIMU()
 {
     static float accel_g[3] = {0};
     static float gyro_dps[3] = {0};
@@ -201,25 +200,42 @@ void read_imu()
     parameters.imu_roll = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
     parameters.imu_pitch = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
 
-    parameters.imu_accel_y = (accel_g[1] * (-GRAVITY));                                                                   // m/s^2
+    parameters.imu_accel_y = (accel_g[1] * (-GRAVITY));          // m/s^2
     parameters.imu_accel_y = (ABS(parameters.imu_accel_y) < STATIC_ACCELEROMETER_THRESHOLD) ? 0 : parameters.imu_accel_y; // m/s^2
 
-    // ZUPT -> Zero Velocitu Update
-    // if ((ABS(accel_g[1]) < STATIC_ACCELEROMETER_THRESHOLD) && (ABS(gyro_dps[1]) < STATIC_GYROSCOPE_THRESHOLD))
-    //     delta_vel_y = 0;
-    // else
-    //     delta_vel_y += 0.5 * (accel_y + prev_accel_y) * (1 / IMU_SAMPLING_RATE);
+    // static float clean_accel = 0; // in gravity units
+    // clean_accel = accel_g[1] - cos((90-parameters.imu_pitch/10) * DEG_TO_RAD); //flaquito si acá dice "static" se actualiza sólo la primera vez
+    // printf("Clean Accel:%f, ", clean_accel);
 
-    // vel_y += delta_vel_y; // m/s
-
-    // prev_accel_y = accel_y;
-
-    // printf("Accel :%2.3f %2.3f %2.3f ,", accel_g[0], accel_g[1], accel_g[2]);
-    // printf("pitch:%f\n", (float)parameters.imu_pitch / 10);
-    // printf("accel_y:%f,vel:%f,pos:%f,pitch:%f\n", accel_y, vel_y, pos_y, (float)parameters.imu_pitch / 10);
+    calculateVelocity(accel_g[1], gyro_dps[1]);
 }
 
-void read_gnss()
+/**
+ * @brief Integrates Acceleration to obtain velicty with ZUPT correction.
+ * 
+ * @param accel_g_y 
+ * @param gyro_dps_y 
+ */
+void calculateVelocity(float accel_g_y, float gyro_dps_y)
+{
+    static float prev_accel_y = 0; // in graviy units
+    static float delta_vel_y = 0;  // in m/s
+
+    static float vel_y = 0;
+    
+    // ZUPT -> Zero Velocitu Update
+    if ((ABS(accel_g_y) < STATIC_ACCELEROMETER_THRESHOLD) && (ABS(gyro_dps_y) < STATIC_GYROSCOPE_THRESHOLD))
+        delta_vel_y = 0;
+    else
+        delta_vel_y = 0.5 * (accel_g_y + prev_accel_y) * GRAVITY * (1 / IMU_SAMPLING_RATE);
+    
+    vel_y += delta_vel_y; // m/s
+    prev_accel_y = accel_g_y;
+
+    parameters.imu_vel_y = (int32_t)(vel_y*100);
+}
+
+void readGNSS()
 {
     // static bool first_time = true;
 
@@ -245,14 +261,14 @@ void read_gnss()
 }
 
 // Returns the current pressure. Handy to have for calibration processes
-void calibrate_bme(void)
+void calibrateBME(void)
 {
     float pressure = BME.readPressure();
     pressure /= 100;
     ground_hP = pressure;
 }
 
-void read_bme()
+void readBME()
 {
     parameters.bme_temperature = (uint32_t)(BME.readTemperature() * 100);
     parameters.bme_pressure = (uint32_t)BME.readPressure();
@@ -327,10 +343,20 @@ uint32_t saveData(packet data)
         saves++;
         buff_count = 0;
     }
+    else if(global_vars.last_status == RECOVERY)
+    {
+        uint32_t prog_addr = (FLASH_SIZE) - FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * saves); //notar que el ultimo sector es para las variables globales
+
+        uint32_t ints = save_and_disable_interrupts();
+        flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
+        restore_interrupts(ints);
+
+        saves++;
+    }
     return saves;
 }
 
-void readData(uint32_t n_pages)
+void readFlash(uint32_t n_pages)
 {
     static packet *data_ptr = (packet *)(XIP_BASE + (FLASH_SIZE)-FLASH_PAGE_SIZE);
 
@@ -358,7 +384,6 @@ void saveGlobalData(flash_global_vars_t data)
     restore_interrupts(ints);
 }
 
-
 bool checkAccel(void)
 {
     // if (parameters.imu_accel_y > 0)
@@ -370,7 +395,8 @@ bool checkAccel(void)
 }
 
 /**
- * @brief Waits for START signal from ground station. Sends ACK.
+ * @brief   Waits for START signal from ground station. Sends ACK.
+ *          If no signal is received, double checks vertical acceleration.
  *
  */
 void waitForStart(void)
@@ -382,19 +408,18 @@ void waitForStart(void)
 
 	if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
     {
+        calibrateRocket();
         parameters.status = LAUNCH;
         global_vars.last_status = parameters.status;
         saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
-        calibrateRocket();
         return;
     }
         
-	if (to_ms_since_boot(get_absolute_time()) - last_time > 100)
+	if (to_ms_since_boot(get_absolute_time()) - last_time > 100) //para leer aceleración vertical, por si no llega el START
 	{
 		last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 		
-		read_data();
-		update_xbee_parameters(last_time);
+		readData();
 	}
 }
 
@@ -411,10 +436,11 @@ void calibrateRocket(void)
 	//dejamos de leer UART, seteamos el puerto para sólo enviarle chars
 
     icm20948_cal_gyro(&IMU_config, &data.gyro_bias[0]);
-    calibrate_bme(); // Actualizamos la presión actual en el suelo, así calculamos la altura a partir de esto
-    altitude_bias = GNSS.getAltitude(); // :+1:
-
-    // startPayload();
+    calibrateBME();                         // Actualizamos la presión actual en el suelo, así calculamos la altura a partir de esto
+    altitude_bias = GNSS.getAltitude();     // :+1:
+    global_vars.initial_lat = GNSS.getLatitude();
+    global_vars.initial_long = GNSS.getLongitude();
+    airbrake_payload(true);
 }
 
 /**
@@ -435,14 +461,13 @@ void waitForLaunch(void)
 	{
 		last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 		
-		read_data();
-		update_xbee_parameters(last_time);
+		readData();
+        
         if(parameters.imu_accel_y > 0)
         {
             parameters.status = ASCENT;
             global_vars.last_status = ASCENT;
             saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
-            //save_falsh = true;            //TODO: ver si implementamos este flag
         }
 	}
 
@@ -458,15 +483,17 @@ void ascentRoutine(void)
         parameters.status = APOGEE;
         global_vars.last_status = APOGEE;
         saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+
+        return;
     }
     
 	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
 	{
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 		
-		read_data();
-		update_xbee_parameters(last_time);
-        saveData(parameters); //guardado de datos actuales en flash
+		readData();
+
+        global_vars.cant_pages = saveData(parameters); //guardado de datos actuales en flash
 	}
 
 	telemetry();
@@ -486,7 +513,9 @@ void telemetry(void)
 	
 	if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 100)
 	{
-		last_time_xbee = to_ms_since_boot(get_absolute_time()); 
+        last_time_xbee = to_ms_since_boot(get_absolute_time()); 
+        
+        updateXbeeParameters(last_time_xbee);
 		xbee.sendPkt();
 		xbee.setPacketCount();
 
@@ -539,7 +568,7 @@ void apogeeRoutine(void)
     static uint32_t last_time = 0;
 	// empiezan los cálculos del airbrake
 	// busca altura máxima
-	// cuando accel = 0, almacena la altura máxima
+	// cuando accel = 0, almacena la altura máxima --> LAMENTABLEMENTE FALSO
 	// event_action = MOVE;
 	// parameters.status = DESCENT;
 
@@ -547,19 +576,19 @@ void apogeeRoutine(void)
     {
         parameters.status = DESCENT;
         global_vars.last_status = DESCENT;
+        global_vars.max_altitude = parameters.gnss_altitude;
         saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+        return;
     }
 
 	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
 	{
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 		
-		read_data();
-		update_xbee_parameters(last_time);
-
-        saveData(parameters);                               //Guardado de datos actuales en flash
+		readData();
+        global_vars.cant_pages = saveData(parameters);      //Guardado de datos actuales en flash
   
-        // airbrake();
+        airbrake_payload();
 	}
     telemetry();
 }
@@ -567,28 +596,21 @@ void apogeeRoutine(void)
 void descentRoutine(void)
 {
     static uint32_t last_time = 0;
-	// cheque si hubo landing
-	// telemetry();
-	// si hubo landing:
-	// event_action = MOVE;
-	// parameters.status = RECOVERY;
-    // standByMode();
 
-    if (parameters.imu_vel_y > -0.05 || parameters.imu_vel_y < 0.05) //Si está descendiendo lo suficientemente lento como para decir que aterrizó
+    if (((parameters.gnss_altitude < 100) && (parameters.imu_vel_y > -2 && parameters.imu_vel_y < 2)) || parameters.gnss_altitude < 5) //Si está descendiendo lo suficientemente lento como para decir que aterrizó
     {
         parameters.status = RECOVERY;
         global_vars.last_status = RECOVERY;
         saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+        return;
     }
 
 	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
 	{
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 		
-		read_data();
-		update_xbee_parameters(last_time);        
-        saveData(parameters);                               //Guardado de datos actuales en flash
-
+		readData();     // :+1:
+        global_vars.cant_pages = saveData(parameters);     //Guardado de datos actuales en flash
 	}
     telemetry();
 }
@@ -603,7 +625,11 @@ void recoverySignal(void)
     static uint32_t last_time = 0;
 
 	if (to_ms_since_boot(get_absolute_time()) - last_time > 3000)
+    {
+        last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
+        
         telemetry();
+    }
 }
 
 /**
@@ -612,9 +638,8 @@ void recoverySignal(void)
  */
 void standByMode(void)
 {
-
+    // TODO: Si la bateria no llegase a alcanzar, apagar todos los sensores
 }
-
 
 /**
  * @brief   PIN_AIRBRAKE = 1 : airbrake closed
@@ -622,7 +647,7 @@ void standByMode(void)
  * 
  * @param payload 
  */
-void airbrake_payload(bool payload = false)
+void airbrake_payload(bool payload)
 {
     static bool pin_state = false;
     static int16_t poly_curve_1 = 0;
