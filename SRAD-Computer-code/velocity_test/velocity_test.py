@@ -8,7 +8,7 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 WHITE = "\033[0m"
 
-PORT_PATH = '/dev/ttyACM0'
+PORT_PATH = '/dev/ttyACM2'
 
 uart = 0
 

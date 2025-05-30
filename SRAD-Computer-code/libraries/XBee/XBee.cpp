@@ -42,16 +42,16 @@ void XBee::setPacketCount()
     parseMsg(PACKET_COUNT);
 }
 
-void XBee::setStatus(MissionStatus_t m_status)
+void XBee::setStatus(uint16_t m_status)
 {
     status = m_status;
-    parseMsg(STATUS);
+    parseMsg(MISSION_STATUS);
 }
 
-void XBee::setBatteryVoltage(char voltage)
+void XBee::setBatteryVoltage(uint16_t voltage)
 {
     battery_level = voltage;
-    parseMsg(BATTERY_LEVEL);
+    parseMsg(BATTERY_LEVEL, DPOINT_TWO);
 }
 
 void XBee::setIMUVerticalVel(int32_t vel)
@@ -117,19 +117,19 @@ void XBee::setGNSSLongitude(int32_t longitude)
     parseMsg(GNSS_LONGITUDE);
 }
 
-void XBee::setBMEPressure(float pressure)
+void XBee::setBMEPressure(uint32_t pressure)
 {
     bme_pressure = pressure;
     parseMsg(BME_PRESSURE);
 }
 
-void XBee::setBMEAltitude(float altitude)
+void XBee::setBMEAltitude(int32_t altitude)
 {
     bme_altitude = altitude;
     parseMsg(BME_ALTITUDE);
 }
 
-void XBee::setBMETemperature(float temperature)
+void XBee::setBMETemperature(int16_t temperature)
 {
     bme_temperature = temperature;
     parseMsg(BME_TEMPERATURE, DPOINT_TWO);
@@ -175,20 +175,23 @@ void XBee::parseMsg(packet_index_t packet, dPoint_t d_point)
 {
     clearPkt(packet);
 
-    int module = 0;
+    int32_t module = 0;
     bool negative = false;
 
     module = (*((int32_t*)(data_arr[packet])));
     uint32_t data = 0;
-
+    
     if (module < 0)
     {
         negative = true;
         data = (uint32_t)(-module);
     }
     else
+    {
         data = (*((uint32_t*)(data_arr[packet])));
-
+        // printf("enum:%d:%d - ", packet, data);
+    }
+    
     for (int i=0; i<SIZE_PARAM; i++)    
     {
         module = ((int)(data))%10;

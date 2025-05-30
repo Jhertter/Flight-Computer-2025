@@ -28,7 +28,13 @@ int main()
     gpio_set_function(PIN_UART_TX, GPIO_FUNC_UART);
     gpio_set_function(PIN_UART_RX, GPIO_FUNC_UART);
 
-    sleep_ms(500);
+    // Initialize ADC for battery voltage measurement
+    // adc_init();
+    // adc_gpio_init(PIN_ADC_BATTERY); // ADC0
+    // adc_select_input(PIN_ADC_BATTERY); // Select ADC0 (GPIO26) for battery voltage measurement
+
+    // Set global variables as they were on last boot (just in case SRAD resets middle flight)
+    // flashReadGlobalData();
 
     // Initialize ICM-20948
     if (icm20948_init(&IMU_config) != 0)
@@ -65,75 +71,66 @@ int main()
     }
     else
     {
-        // sleep_ms(500);
-        // if(!GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS) || !GNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS))
-        //     printf("GPS not enabled\n");
-        // sleep_ms(500);
-        // if (GNSS.setNavigationFrequency(20))
-        //     printf("GNSS nav Frequency: %d\n", GNSS.getNavigationFrequency());
-        // else
-        //     printf("Skill issue GNSS nav Frequency\n");
-        // sleep_ms(500);
-        // if (!GNSS.setAutoPVTrate(20))
-        //     printf("Skill issue AUTO PVT rate\n");
-        // sleep_ms(500);
-        // if (!GNSS.setHNRNavigationRate(15))
-        //     printf("Skill issue HNR Navigation rate\n");
-        // sleep_ms(500);
-        sleep_ms(500);
+        sleep_ms(200);
         GNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS);
-        sleep_ms(500);
+        sleep_ms(200);
         GNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS);
-        sleep_ms(500);
+        sleep_ms(200);
         GNSS.setNavigationFrequency(20);
-        sleep_ms(500);
+        sleep_ms(200);
         GNSS.setAutoPVTrate(20);
-        sleep_ms(500);
+        sleep_ms(200);
         GNSS.setHNRNavigationRate(15);
+        sleep_ms(200);
+
+        gpio_put(PIN_LED_ALTITUDE, 1);
+
+        // if(parameters.status == PRE_LAUNCH)
+        // {
+        //     do {
+        //         parameters.satellite_count = GNSS.getSIV();
+        //         printf("Waiting for GNSS satellites: %d\n", parameters.satellite_count);
+        //     } while (parameters.satellite_count < 1);
+        // }
     }
-    sleep_ms(2);
     init_leds();
 
-    // TODO: Uncomment this when using SRAD on ºopen sky
-    // while (parameters.satellite_count = GNSS.getSIV() < 1)
-    //     ;
     gpio_put(PIN_LED_ON, 1);
 
     while (true)
     {
-        static uint32_t last_time = 0;
+        // static uint32_t last_time = 0;
 
-        if (to_ms_since_boot(get_absolute_time()) - last_time > 5) // 200Hz
-        {
-            // printf("Data to send -> ");
-            last_time = to_ms_since_boot(get_absolute_time());
-            readData();
-            telemetry();
-        }
-
-        // switch (parameters.status)
+        // if (to_ms_since_boot(get_absolute_time()) - last_time > 5) // 200Hz
         // {
-        // case PRE_LAUNCH:
-        //     waitForStart();
-        //     break;
-        // case LAUNCH:
-        //     waitForLaunch();
-        //     break;
-        // case ASCENT:
-        //     ascentRoutine();
-        //     break;
-        // case APOGEE:
-        //     apogeeRoutine();
-        //     break;
-        // case DESCENT:
-        //     descentRoutine();
-        //     break;
-        // // case LANDING:
-        // //     break;
-        // case RECOVERY:
-        //     recoverySignal();
-        //     break;
+        //     last_time = to_ms_since_boot(get_absolute_time());
+        //     readData();
+        //     telemetry();
         // }
+
+        switch (parameters.status)
+        {
+        case PRE_LAUNCH:
+            waitForStart();
+            break;
+        case LAUNCH:
+            waitForLaunch();
+            break;
+        case ASCENT:
+            ascentRoutine();
+            break;
+        case APOGEE:
+            apogeeRoutine();
+            break;
+        case DESCENT:
+            descentRoutine();
+            break;
+        // case LANDING:
+        //     break;
+        case RECOVERY:
+            recoverySignal();
+            break;
+        }
     }
 }
 
@@ -154,29 +151,30 @@ void error_led()
 
 void updateXbeeParameters(uint32_t last_time)
 {
+    static bool si = true;
     // Mission data
     xbee.setMissionTime(last_time);
     xbee.setPacketCount();
-    // xbee.setBatteryVoltage(parameters.battery_level);
-
+    xbee.setStatus(parameters.status);
+    // parameters.battery_level = (uint8_t)(adc_read() * 8.4f / 4096.0f * 100); // Convert ADC value to percentage
+    parameters.battery_level = (uint32_t)(735);
+    xbee.setBatteryVoltage(parameters.battery_level);
+    
+    // IMU data
+    xbee.setIMUVerticalVel(parameters.imu_vel_y);
+    xbee.setIMURoll(parameters.imu_roll);
+    xbee.setIMUPitch(parameters.imu_pitch);
+    
     // GNSS data
-    if (parameters.satellite_count > 0)
-    {
-        xbee.setGNSSTime(parameters.gnss_time);
-        xbee.setGNSSLatitude(parameters.gnss_latitude);
-        xbee.setGNSSLongitude(parameters.gnss_longitude);
-        xbee.setGNSSAltitude(parameters.gnss_altitude, parameters.gnss_altitude_MSL);
-    }
-
+    xbee.setGNSSTime(parameters.gnss_time);
+    xbee.setGNSSLatitude(parameters.gnss_latitude);
+    xbee.setGNSSLongitude(parameters.gnss_longitude);
+    xbee.setGNSSAltitude(parameters.gnss_altitude, parameters.gnss_altitude_MSL);
+    
     // ESU data
     xbee.setBMEPressure(parameters.bme_pressure);
     xbee.setBMEAltitude(parameters.bme_altitude);
     xbee.setBMETemperature(parameters.bme_temperature);
-
-    // IMU data
-    xbee.setIMUPitch(parameters.imu_pitch);
-    xbee.setIMURoll(parameters.imu_roll);
-    xbee.setIMUVerticalVel(parameters.imu_vel_y);
 }
 
 void readData()
@@ -288,9 +286,9 @@ void calibrateBME(void)
 
 void readBME()
 {
-    parameters.bme_temperature = (uint32_t)(BME.readTemperature() * 100);
+    parameters.bme_temperature = (int32_t)(BME.readTemperature() * 100);
     parameters.bme_pressure = (uint32_t)BME.readPressure();
-    parameters.bme_altitude = (uint32_t)BME.readAltitude(ground_hP);
+    parameters.bme_altitude = (int32_t)BME.readAltitude(1013.25f); 
 }
 
 void init_leds()
@@ -323,7 +321,7 @@ Si se quedó sin memoria, va a devolver siempre la misma cantidad de veces que s
 guardó en el buffer la estructura, pero no se va a poder guardar más información.
 En este caso, todo lo que esté en el buffer, se va a perder si se apaga el sistema.
 */
-uint32_t saveData(packet data)
+uint32_t flashSaveData(packet data)
 {
     static uint8_t buff_count = 0;
     static uint32_t saves = 0;
@@ -352,7 +350,7 @@ uint32_t saveData(packet data)
             restore_interrupts(ints);
         }
         // Después de borrar (si fue necesario), guardamos el buffer en memoria
-        uint32_t prog_addr = (FLASH_SIZE)-FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * saves); // notar que el ultimo sector es para las variables globales
+        uint32_t prog_addr = (FLASH_SIZE)-(FLASH_SECTOR_SIZE*2) - (FLASH_PAGE_SIZE * saves); // notar que el ultimo sector es para las variables globales
 
         uint32_t ints = save_and_disable_interrupts();
         flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
@@ -363,7 +361,7 @@ uint32_t saveData(packet data)
     }
     else if (global_vars.last_status == RECOVERY)
     {
-        uint32_t prog_addr = (FLASH_SIZE)-FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * saves); // notar que el ultimo sector es para las variables globales
+        uint32_t prog_addr = (FLASH_SIZE)-(FLASH_SECTOR_SIZE) - (FLASH_PAGE_SIZE * (saves+1)); // notar que el ultimo sector es para las variables globales
 
         uint32_t ints = save_and_disable_interrupts();
         flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
@@ -374,31 +372,49 @@ uint32_t saveData(packet data)
     return saves;
 }
 
-void readFlash(uint32_t n_pages)
+void flashRead(uint32_t n_pages)
 {
-    static packet *data_ptr = (packet *)(XIP_BASE + (FLASH_SIZE)-FLASH_PAGE_SIZE);
+    static packet *data_ptr = (packet *)(XIP_BASE + (FLASH_SIZE) - FLASH_SECTOR_SIZE -FLASH_PAGE_SIZE);
 
-    packet data[BUFFER_SIZE] = {0};
     for (uint32_t j = 0; j < n_pages; j++)
     {
         for (uint8_t i = 0; i < BUFFER_SIZE; i++) // este for mandaría todas las estructuras, una por una, por el puerto serie
         {
-            fwrite(data_ptr, sizeof(packet), 1, stdout); // TODO: a checkear que ande. Spoiler: no anda
-            printf("Packet %d: \n", i);
+            for (uint8_t k = 0; k < sizeof(packet); k++) // este for mandaría todos los bytes de la estructura, uno por uno, por el puerto serie
+            {
+                printf("%02X", data_ptr[j]);
+            }
+            printf("\n");
+            data_ptr++;
         }
+        data_ptr = (packet *)(XIP_BASE + (FLASH_SIZE) - FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * (j + 2)));
     }
 }
 
-void saveGlobalData(flash_global_vars_t data)
+void flashSaveGlobalData(flash_global_vars_t data)
 {
     static const uint32_t erase_addr = (FLASH_SIZE) - (FLASH_SECTOR_SIZE);
-    static const uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * 2); // notar que el ultimo sector es para las variables globales
+    static const uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * 2); // No guardamos en la última página para dejar lugar a futuras implementaciones y tests
     uint32_t ints = save_and_disable_interrupts();
     flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
     restore_interrupts(ints);
 
     ints = save_and_disable_interrupts();
     flash_range_program(prog_addr, (uint8_t *)&global_vars, sizeof(flash_global_vars_t));
+    restore_interrupts(ints);
+}
+
+void flashReadGlobalData(void)
+{
+    static flash_global_vars_t *flash_variables = (flash_global_vars_t *)(XIP_BASE + (FLASH_SIZE) - (FLASH_PAGE_SIZE * 2));
+    global_vars = *flash_variables;
+}
+
+void flashResetGlobalData(void)
+{
+    static const uint32_t erase_addr = (FLASH_SIZE) - (FLASH_SECTOR_SIZE);
+    uint32_t ints = save_and_disable_interrupts();
+    flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
     restore_interrupts(ints);
 }
 
@@ -429,7 +445,7 @@ void waitForStart(void)
         calibrateRocket();
         parameters.status = LAUNCH;
         global_vars.last_status = parameters.status;
-        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
@@ -485,7 +501,7 @@ void waitForLaunch(void)
         {
             parameters.status = ASCENT;
             global_vars.last_status = ASCENT;
-            saveGlobalData(global_vars); // Guardado de parámetros globales en flash
+            flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         }
     }
 
@@ -500,7 +516,7 @@ void ascentRoutine(void)
     {
         parameters.status = APOGEE;
         global_vars.last_status = APOGEE;
-        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
 
         return;
     }
@@ -511,7 +527,7 @@ void ascentRoutine(void)
 
         readData();
 
-        global_vars.cant_pages = saveData(parameters); // guardado de datos actuales en flash
+        global_vars.cant_pages = flashSaveData(parameters); // guardado de datos actuales en flash
     }
 
     telemetry();
@@ -530,7 +546,6 @@ void telemetry(void)
     if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 100)
     {
         last_time_xbee = to_ms_since_boot(get_absolute_time());
-
         updateXbeeParameters(last_time_xbee);
         xbee.sendPkt();
 
@@ -540,18 +555,14 @@ void telemetry(void)
 
         xbee.sendParameter(MISSION_TIME);
         xbee.sendParameter(PACKET_COUNT);
-        // xbee.sendPkt(STATUS);
-        // xbee.sendPkt(STATUS);
-        // xbee.sendPkt(BATTERY_VOLTAGE);
+        xbee.sendParameter(MISSION_STATUS);
+        xbee.sendParameter(BATTERY_LEVEL);
 
         printf("- ");
 
         xbee.sendParameter(IMU_ROLL);
         xbee.sendParameter(IMU_PITCH);
-        // printf("%ld(10^-3 m/s) ", parameters.imu_xvel);
-        // printf("%ld(10^-3 m/s) ", parameters.imu_yvel);
-        // xbee.sendPkt(IMU_ACCELERATION);
-        // xbee.sendPkt(IMU_TILT);
+        xbee.sendParameter(IMU_Y_VEL);
 
         printf("- ");
 
@@ -593,7 +604,7 @@ void apogeeRoutine(void)
         parameters.status = DESCENT;
         global_vars.last_status = DESCENT;
         global_vars.max_altitude = parameters.gnss_altitude;
-        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
@@ -602,7 +613,7 @@ void apogeeRoutine(void)
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
         readData();
-        global_vars.cant_pages = saveData(parameters); // Guardado de datos actuales en flash
+        global_vars.cant_pages = flashSaveData(parameters); // Guardado de datos actuales en flash
 
         airbrake_payload();
     }
@@ -617,7 +628,7 @@ void descentRoutine(void)
     {
         parameters.status = RECOVERY;
         global_vars.last_status = RECOVERY;
-        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
@@ -626,7 +637,7 @@ void descentRoutine(void)
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
         readData();                                    // :+1:
-        global_vars.cant_pages = saveData(parameters); // Guardado de datos actuales en flash
+        global_vars.cant_pages = flashSaveData(parameters); // Guardado de datos actuales en flash
     }
     telemetry();
 }
@@ -640,10 +651,9 @@ void recoverySignal(void)
 {
     static uint32_t last_time = 0;
 
-    if (to_ms_since_boot(get_absolute_time()) - last_time > 3000)
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 5000)
     {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-
         telemetry();
     }
 }
@@ -683,3 +693,5 @@ void airbrake_payload(bool payload)
             gpio_put(PIN_AIRBRAKE, 1); // Close airbrake
     }
 }
+
+

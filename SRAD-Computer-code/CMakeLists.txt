@@ -67,13 +67,13 @@ target_include_directories(SRAD-Computer-code PRIVATE
 target_link_libraries(SRAD-Computer-code 
         hardware_spi
         hardware_i2c
+        hardware_adc
         pico-icm20948
         MadgwickAHRS
         sam_m8q
         sam_m8q_v2
         bmp280
         XBee
-        # fsm
         )
 
 target_include_directories(SRAD-Computer-code PRIVATE

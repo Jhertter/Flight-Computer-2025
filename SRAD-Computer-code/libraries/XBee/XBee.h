@@ -47,9 +47,9 @@ typedef enum {
 typedef enum {
     MISSION_TIME = 0,
     PACKET_COUNT,
-    STATUS,
     BATTERY_LEVEL,
-
+    MISSION_STATUS,
+    
     IMU_Y_VEL,
     IMU_ROLL,
     IMU_PITCH,
@@ -74,8 +74,8 @@ class XBee
         
         void setMissionTime(uint32_t time);
         void setPacketCount();
-        void setStatus(MissionStatus_t m_status);
-        void setBatteryVoltage(char voltage); 
+        void setStatus(uint16_t m_status);
+        void setBatteryVoltage(uint16_t voltage); 
         
         void setIMUVerticalVel(int32_t vel);
         void setIMURoll(int16_t roll);
@@ -87,9 +87,9 @@ class XBee
         void setGNSSLongitude(int32_t longitude);
         // TODO: add satellite count
         
-        void setBMEPressure(float pressure);
-        void setBMETemperature(float temperature);
-        void setBMEAltitude(float altitude);
+        void setBMEPressure(uint32_t pressure);
+        void setBMETemperature(int16_t emperature);
+        void setBMEAltitude(int32_t altitude);
         
         void parseMsg(packet_index_t packet, dPoint_t d_point = DPOINT_NONE);
         void sendParameter(packet_index_t packet);
@@ -98,23 +98,27 @@ class XBee
         bool receiveStartSignal();
         
     private:
-        char pkt[PKT_SIZE + 1] = {0}; // +1 for the '\n' terminator
+        char pkt[PKT_SIZE + 1] = {'0'}; // +1 for the '\n' terminator
     
         uint32_t start_time;
     
         xbee_uart_cfg_t uart_cfg;
         
         uint32_t mission_time = 0;
-        uint16_t packet_count = 0;
-        uint8_t battery_level = 0;
-        MissionStatus_t status = PRE_LAUNCH;
+        // uint16_t packet_count = 0;
+        // uint16_t status = LAUNCH;
+        // uint16_t battery_level = 459;
+        uint32_t packet_count = 0;
+        uint32_t status = LAUNCH;
+        uint32_t battery_level = 459;
         
-        uint32_t imu_y_vel = 0;
+        int32_t imu_y_vel = 0;
         int32_t imu_roll = 0;
         int32_t imu_pitch = 0;
     
         uint32_t gnss_time = 0;
-        uint16_t gnss_altitude = 0;
+        // uint16_t gnss_altitude = 0;
+        uint32_t gnss_altitude = 0;
         uint32_t gnss_latitude = 0;
         uint32_t gnss_longitude = 0;
     
@@ -125,8 +129,8 @@ class XBee
         void* data_arr[CANT_PARAM] = {
             &mission_time,
             &packet_count,
-            &status,
             &battery_level,
+            &status,
             
             &imu_y_vel,
             &imu_roll,
