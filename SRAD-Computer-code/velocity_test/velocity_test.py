@@ -24,22 +24,22 @@ while (True):
             velocity = float(((uart.readline().decode('utf-8').strip()).split(',')[0]).split(':')[-1])
             vel_km_h = round(velocity * 3.6, 2)
 
-            # line = uart.readline().decode('utf-8').strip()
-            # if line:
-            #     os.system('clear')
-            #     print(line)
-
-            if velocity:
+            line = uart.readline().decode('utf-8').strip()
+            if line:
                 os.system('clear')
-                if velocity == 0:   
-                    # print(f"{YELLOW}{vel_km_h}{WHITE}\n")
-                    print(f"{YELLOW}{velocity}{WHITE}")
-                elif velocity > 0:
-                    # print(f"{GREEN}{vel_km_h}{WHITE}\n")
-                    print(f"{GREEN}{velocity}{WHITE}")
-                elif velocity < 0:
-                    # print(f"{RED}{vel_km_h}{WHITE}\n")
-                    print(f"{RED}{velocity}{WHITE}")
+                print(line)
+
+            # if velocity:
+            #     os.system('clear')
+            #     if velocity == 0:   
+            #         # print(f"{YELLOW}{vel_km_h}{WHITE}\n")
+            #         print(f"{YELLOW}{velocity}{WHITE}")
+            #     elif velocity > 0:
+            #         # print(f"{GREEN}{vel_km_h}{WHITE}\n")
+            #         print(f"{GREEN}{velocity}{WHITE}")
+            #     elif velocity < 0:
+            #         # print(f"{RED}{vel_km_h}{WHITE}\n")
+            #         print(f"{RED}{velocity}{WHITE}")
                     
         except serial.SerialException: 
             state = 'DISCONNECTED'

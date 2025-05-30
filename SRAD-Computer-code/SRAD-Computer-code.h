@@ -14,7 +14,7 @@
 #include "libraries/bmp_280/bmp280.h"
 #include "libraries/XBee/XBee.h"
 
-#define PRINT_DEBUG_PKT 0
+#define PRINT_DEBUG_PKT 1
 
 #define I2C_FREQUENCY 400000
 
@@ -113,6 +113,7 @@ static float ground_hP = 0;
 
 void gpio_toggle(int pin);
 void init_leds();
+void error_led(void);
 
 packet buffer_flash[BUFFER_SIZE];
 uint32_t saveData(packet data);

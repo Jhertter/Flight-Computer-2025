@@ -34,7 +34,7 @@ int main()
     if (icm20948_init(&IMU_config) != 0)
     {
         printf("IMU not detected at I2C address. Freezing");
-        gpio_put(PIN_LED_ERROR, 1);
+        error_led();
         while (true)
             ;
     }
@@ -48,11 +48,10 @@ int main()
     if (BME.begin(0x76, 0x60) == false)
     {
         printf("BME not detected at default I2C address. Freezing.");
-        gpio_put(PIN_LED_ERROR, 1);
+        error_led();
         while (1)
             ;
     }
-    
 
     gpio_toggle(PIN_LED_ON);
 
@@ -60,7 +59,7 @@ int main()
     if (GNSS.begin(i2c_setUp, 0x42) == false) // Connect to the Ublox module using Wire port
     {
         printf("GNSS not detected at default I2C address. Freezing.");
-        gpio_put(PIN_LED_ERROR, 1);
+        error_led();
         while (1)
             ;
     }
@@ -92,34 +91,49 @@ int main()
         sleep_ms(500);
         GNSS.setHNRNavigationRate(15);
     }
+    sleep_ms(2);
     init_leds();
+
+    // TODO: Uncomment this when using SRAD on ºopen sky
+    // while (parameters.satellite_count = GNSS.getSIV() < 1)
+    //     ;
     gpio_put(PIN_LED_ON, 1);
 
     while (true)
     {
-        switch (parameters.status)
+        static uint32_t last_time = 0;
+
+        if (to_ms_since_boot(get_absolute_time()) - last_time > 5) // 200Hz
         {
-            case PRE_LAUNCH:
-                waitForStart();
-                break;
-            case LAUNCH:
-                waitForLaunch();
-                break;
-            case ASCENT:
-                ascentRoutine();
-                break;
-            case APOGEE:
-                apogeeRoutine();
-                break;
-            case DESCENT:
-                descentRoutine();
-                break;
-            // case LANDING:
-            //     break;
-            case RECOVERY:
-                recoverySignal();
-                break;
+            // printf("Data to send -> ");
+            last_time = to_ms_since_boot(get_absolute_time());
+            readData();
+            telemetry();
         }
+
+        // switch (parameters.status)
+        // {
+        // case PRE_LAUNCH:
+        //     waitForStart();
+        //     break;
+        // case LAUNCH:
+        //     waitForLaunch();
+        //     break;
+        // case ASCENT:
+        //     ascentRoutine();
+        //     break;
+        // case APOGEE:
+        //     apogeeRoutine();
+        //     break;
+        // case DESCENT:
+        //     descentRoutine();
+        //     break;
+        // // case LANDING:
+        // //     break;
+        // case RECOVERY:
+        //     recoverySignal();
+        //     break;
+        // }
     }
 }
 
@@ -131,10 +145,18 @@ void gpio_toggle(int pin)
         gpio_put(pin, 1);
 }
 
+void error_led()
+{
+    gpio_put(PIN_LED_ERROR, 1);
+    gpio_put(PIN_LED_ALTITUDE, 0);
+    gpio_put(PIN_LED_ON, 0);
+}
+
 void updateXbeeParameters(uint32_t last_time)
 {
     // Mission data
     xbee.setMissionTime(last_time);
+    xbee.setPacketCount();
     // xbee.setBatteryVoltage(parameters.battery_level);
 
     // GNSS data
@@ -169,7 +191,6 @@ void readData()
         readGNSS();
 
     times++;
-
     if (times > 240)
         times = 0;
 }
@@ -178,9 +199,10 @@ void readData()
 #define RAD_TO_DEG (180.0f / 3.14159265358979323846f)
 #define DEG_TO_RAD (1 / RAD_TO_DEG)
 #define GRAVITY (9.80665f)
-#define IMU_SAMPLING_RATE (200.0f)             // Hz
-#define STATIC_ACCELEROMETER_THRESHOLD (0.12f) // m/s^2
-#define STATIC_GYROSCOPE_THRESHOLD (0.15f)     // m/s
+#define IMU_SAMPLING_RATE (200.0f)                     // Hz
+#define IMU_SAMPLING_PERIOD (1.0f / IMU_SAMPLING_RATE) // seconds
+#define STATIC_ACCELEROMETER_THRESHOLD (0.12f)         // m/s^2
+#define STATIC_GYROSCOPE_THRESHOLD (3.0f)              // m/s
 
 void readIMU()
 {
@@ -200,21 +222,17 @@ void readIMU()
     parameters.imu_roll = (int16_t)(atan2(-accel_g[0], accel_g[2]) * RAD_TO_DEG * 10);
     parameters.imu_pitch = (int16_t)(atan(accel_g[1] / sqrt(accel_g[0] * accel_g[0] + accel_g[2] * accel_g[2])) * RAD_TO_DEG * 10);
 
-    parameters.imu_accel_y = (accel_g[1] * (-GRAVITY));          // m/s^2
+    parameters.imu_accel_y = (accel_g[1] * (-GRAVITY));                                                                   // m/s^2
     parameters.imu_accel_y = (ABS(parameters.imu_accel_y) < STATIC_ACCELEROMETER_THRESHOLD) ? 0 : parameters.imu_accel_y; // m/s^2
-
-    // static float clean_accel = 0; // in gravity units
-    // clean_accel = accel_g[1] - cos((90-parameters.imu_pitch/10) * DEG_TO_RAD); //flaquito si acá dice "static" se actualiza sólo la primera vez
-    // printf("Clean Accel:%f, ", clean_accel);
 
     calculateVelocity(accel_g[1], gyro_dps[1]);
 }
 
 /**
  * @brief Integrates Acceleration to obtain velicty with ZUPT correction.
- * 
- * @param accel_g_y 
- * @param gyro_dps_y 
+ *
+ * @param accel_g_y
+ * @param gyro_dps_y
  */
 void calculateVelocity(float accel_g_y, float gyro_dps_y)
 {
@@ -222,17 +240,17 @@ void calculateVelocity(float accel_g_y, float gyro_dps_y)
     static float delta_vel_y = 0;  // in m/s
 
     static float vel_y = 0;
-    
+
     // ZUPT -> Zero Velocitu Update
-    if ((ABS(accel_g_y) < STATIC_ACCELEROMETER_THRESHOLD) && (ABS(gyro_dps_y) < STATIC_GYROSCOPE_THRESHOLD))
+    if ((ABS(accel_g_y - 1) < STATIC_ACCELEROMETER_THRESHOLD) && (ABS(gyro_dps_y) < STATIC_GYROSCOPE_THRESHOLD))
         delta_vel_y = 0;
     else
-        delta_vel_y = 0.5 * (accel_g_y + prev_accel_y) * GRAVITY * (1 / IMU_SAMPLING_RATE);
-    
+        delta_vel_y = 0.5 * (accel_g_y + prev_accel_y) * GRAVITY * IMU_SAMPLING_PERIOD;
+
     vel_y += delta_vel_y; // m/s
     prev_accel_y = accel_g_y;
 
-    parameters.imu_vel_y = (int32_t)(vel_y*100);
+    parameters.imu_vel_y = (int32_t)(vel_y * 100);
 }
 
 void readGNSS()
@@ -242,7 +260,7 @@ void readGNSS()
     // if (first_time)
     // {
     parameters.satellite_count = GNSS.getSIV();
-        
+
     //     if (parameters.satellite_count > 20)
     //         parameters.satellite_count = 0;
 
@@ -323,7 +341,7 @@ uint32_t saveData(packet data)
         if (saves % 16 == 0)
         {
             uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * ((saves / 16) + 2)); //+2 para reservar el último para las variables globales
-            if (erase_addr <= FLASH_CODE_END) // No borrar el sector de código
+            if (erase_addr <= FLASH_CODE_END)                                                        // No borrar el sector de código
             {
                 out_of_memory = true;
                 return saves;
@@ -334,7 +352,7 @@ uint32_t saveData(packet data)
             restore_interrupts(ints);
         }
         // Después de borrar (si fue necesario), guardamos el buffer en memoria
-        uint32_t prog_addr = (FLASH_SIZE) - FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * saves); //notar que el ultimo sector es para las variables globales
+        uint32_t prog_addr = (FLASH_SIZE)-FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * saves); // notar que el ultimo sector es para las variables globales
 
         uint32_t ints = save_and_disable_interrupts();
         flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
@@ -343,9 +361,9 @@ uint32_t saveData(packet data)
         saves++;
         buff_count = 0;
     }
-    else if(global_vars.last_status == RECOVERY)
+    else if (global_vars.last_status == RECOVERY)
     {
-        uint32_t prog_addr = (FLASH_SIZE) - FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * saves); //notar que el ultimo sector es para las variables globales
+        uint32_t prog_addr = (FLASH_SIZE)-FLASH_SECTOR_SIZE - (FLASH_PAGE_SIZE * saves); // notar que el ultimo sector es para las variables globales
 
         uint32_t ints = save_and_disable_interrupts();
         flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
@@ -374,7 +392,7 @@ void readFlash(uint32_t n_pages)
 void saveGlobalData(flash_global_vars_t data)
 {
     static const uint32_t erase_addr = (FLASH_SIZE) - (FLASH_SECTOR_SIZE);
-    static const uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * 2); //notar que el ultimo sector es para las variables globales 
+    static const uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * 2); // notar que el ultimo sector es para las variables globales
     uint32_t ints = save_and_disable_interrupts();
     flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
     restore_interrupts(ints);
@@ -401,43 +419,43 @@ bool checkAccel(void)
  */
 void waitForStart(void)
 {
-	//leemos uart hasta que llegue el char de inicio (START)
-	// Manda ACK
-	//si nunca llega START y empieza a acelerar el weon, pasamos a estado LAUNCH
+    // leemos uart hasta que llegue el char de inicio (START)
+    //  Manda ACK
+    // si nunca llega START y empieza a acelerar el weon, pasamos a estado LAUNCH
     static uint32_t last_time = 0;
 
-	if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
+    if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
     {
         calibrateRocket();
         parameters.status = LAUNCH;
         global_vars.last_status = parameters.status;
-        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
-        
-	if (to_ms_since_boot(get_absolute_time()) - last_time > 100) //para leer aceleración vertical, por si no llega el START
-	{
-		last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-		
-		readData();
-	}
+
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 100) // para leer aceleración vertical, por si no llega el START
+    {
+        last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
+
+        readData();
+    }
 }
 
 /**
- * @brief   Calibrate rocket parameters (GNSS altitude, 
- *          pressure sensor offset & imu bias) and 
+ * @brief   Calibrate rocket parameters (GNSS altitude,
+ *          pressure sensor offset & imu bias) and
  *          starts payload.
  *
  */
 void calibrateRocket(void)
 {
-	// Y manda el telegrama a la payload con el pin que va a la ESP32
-	// ASEGURARSE QUE VAN A PASAR X SEGUNDOS PARA QUE SE PRENDA LA PAYLOAD
-	//dejamos de leer UART, seteamos el puerto para sólo enviarle chars
+    // Y manda el telegrama a la payload con el pin que va a la ESP32
+    // ASEGURARSE QUE VAN A PASAR X SEGUNDOS PARA QUE SE PRENDA LA PAYLOAD
+    // dejamos de leer UART, seteamos el puerto para sólo enviarle chars
 
     icm20948_cal_gyro(&IMU_config, &data.gyro_bias[0]);
-    calibrateBME();                         // Actualizamos la presión actual en el suelo, así calculamos la altura a partir de esto
-    altitude_bias = GNSS.getAltitude();     // :+1:
+    calibrateBME();                     // Actualizamos la presión actual en el suelo, así calculamos la altura a partir de esto
+    altitude_bias = GNSS.getAltitude(); // :+1:
     global_vars.initial_lat = GNSS.getLatitude();
     global_vars.initial_long = GNSS.getLongitude();
     airbrake_payload(true);
@@ -445,63 +463,61 @@ void calibrateRocket(void)
 
 /**
  * @brief NOP unless accel > 0
- * 
+ *
  */
 void waitForLaunch(void)
 {
-	static uint32_t last_time = 0;
-	// se queda en este estado hasta que la accel_y > 0
-	// Podria trasmitir telemetria tambien, TBD
-	// si accel > 0:
-	// 	event_action = MOVE;
-	// 	parameters.status = ASCENT;
+    static uint32_t last_time = 0;
+    // se queda en este estado hasta que la accel_y > 0
+    // Podria trasmitir telemetria tambien, TBD
+    // si accel > 0:
+    // 	event_action = MOVE;
+    // 	parameters.status = ASCENT;
     //  save_falsh = true;
-        
-	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
-	{
-		last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-		
-		readData();
-        
-        if(parameters.imu_accel_y > 0)
+
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
+    {
+        last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
+
+        readData();
+
+        if (parameters.imu_accel_y > 0)
         {
             parameters.status = ASCENT;
             global_vars.last_status = ASCENT;
-            saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+            saveGlobalData(global_vars); // Guardado de parámetros globales en flash
         }
-	}
+    }
 
-	return;
+    return;
 }
 
 void ascentRoutine(void)
 {
     static uint32_t last_time = 0;
-    
+
     if (parameters.gnss_altitude > 2000)
     {
         parameters.status = APOGEE;
         global_vars.last_status = APOGEE;
-        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
 
         return;
     }
-    
-	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
-	{
+
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
+    {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-		
-		readData();
 
-        global_vars.cant_pages = saveData(parameters); //guardado de datos actuales en flash
-	}
+        readData();
 
-	telemetry();
+        global_vars.cant_pages = saveData(parameters); // guardado de datos actuales en flash
+    }
 
-	return;
+    telemetry();
+
+    return;
 }
-
-
 
 /**
  * @brief Transmits telemetry through xbee
@@ -510,52 +526,52 @@ void ascentRoutine(void)
 void telemetry(void)
 {
     static uint32_t last_time_xbee = 0;
-	
-	if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 100)
-	{
-        last_time_xbee = to_ms_since_boot(get_absolute_time()); 
-        
+
+    if (to_ms_since_boot(get_absolute_time()) - last_time_xbee > 100)
+    {
+        last_time_xbee = to_ms_since_boot(get_absolute_time());
+
         updateXbeeParameters(last_time_xbee);
-		xbee.sendPkt();
-		xbee.setPacketCount();
+        xbee.sendPkt();
 
 #if PRINT_DEBUG_PKT
 
-		printf("%d - ", parameters.satellite_count);
+        printf("%d - ", parameters.satellite_count);
 
-		xbee.sendParameter(MISSION_TIME);
-		xbee.sendParameter(PACKET_COUNT);
-		// xbee.sendPkt(STATUS);
-		// xbee.sendPkt(BATTERY_VOLTAGE);
+        xbee.sendParameter(MISSION_TIME);
+        xbee.sendParameter(PACKET_COUNT);
+        // xbee.sendPkt(STATUS);
+        // xbee.sendPkt(STATUS);
+        // xbee.sendPkt(BATTERY_VOLTAGE);
 
-		printf("- ");
+        printf("- ");
 
-		xbee.sendParameter(IMU_ROLL);
-		xbee.sendParameter(IMU_PITCH);
-		// printf("%ld(10^-3 m/s) ", parameters.imu_xvel);
-		// printf("%ld(10^-3 m/s) ", parameters.imu_yvel);
-		// xbee.sendPkt(IMU_ACCELERATION);
-		// xbee.sendPkt(IMU_TILT);
+        xbee.sendParameter(IMU_ROLL);
+        xbee.sendParameter(IMU_PITCH);
+        // printf("%ld(10^-3 m/s) ", parameters.imu_xvel);
+        // printf("%ld(10^-3 m/s) ", parameters.imu_yvel);
+        // xbee.sendPkt(IMU_ACCELERATION);
+        // xbee.sendPkt(IMU_TILT);
 
-		printf("- ");
+        printf("- ");
 
-		if (parameters.satellite_count > 0)
-		{
-			xbee.sendParameter(GNSS_TIME);
-			xbee.sendParameter(GNSS_LATITUDE);
-			xbee.sendParameter(GNSS_LONGITUDE);
-			xbee.sendParameter(GNSS_ALTITUDE);
-		}
+        if (parameters.satellite_count > 0)
+        {
+            xbee.sendParameter(GNSS_TIME);
+            xbee.sendParameter(GNSS_LATITUDE);
+            xbee.sendParameter(GNSS_LONGITUDE);
+            xbee.sendParameter(GNSS_ALTITUDE);
+        }
 
-		printf("- ");
+        printf("- ");
 
-		xbee.sendParameter(BME_PRESSURE);
-		xbee.sendParameter(BME_ALTITUDE);
-		xbee.sendParameter(BME_TEMPERATURE);
+        xbee.sendParameter(BME_PRESSURE);
+        xbee.sendParameter(BME_ALTITUDE);
+        xbee.sendParameter(BME_TEMPERATURE);
 
-		printf("\n");
+        printf("\n");
 #endif
-	}
+    }
 }
 
 /**
@@ -566,30 +582,30 @@ void telemetry(void)
 void apogeeRoutine(void)
 {
     static uint32_t last_time = 0;
-	// empiezan los cálculos del airbrake
-	// busca altura máxima
-	// cuando accel = 0, almacena la altura máxima --> LAMENTABLEMENTE FALSO
-	// event_action = MOVE;
-	// parameters.status = DESCENT;
+    // empiezan los cálculos del airbrake
+    // busca altura máxima
+    // cuando accel = 0, almacena la altura máxima --> LAMENTABLEMENTE FALSO
+    // event_action = MOVE;
+    // parameters.status = DESCENT;
 
-    if (parameters.imu_vel_y < 0)   // hasta que no funcione del todo bien la velocidad, calcular altura
+    if (parameters.imu_vel_y < 0) // hasta que no funcione del todo bien la velocidad, calcular altura
     {
         parameters.status = DESCENT;
         global_vars.last_status = DESCENT;
         global_vars.max_altitude = parameters.gnss_altitude;
-        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
-	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
-	{
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
+    {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-		
-		readData();
-        global_vars.cant_pages = saveData(parameters);      //Guardado de datos actuales en flash
-  
+
+        readData();
+        global_vars.cant_pages = saveData(parameters); // Guardado de datos actuales en flash
+
         airbrake_payload();
-	}
+    }
     telemetry();
 }
 
@@ -597,21 +613,21 @@ void descentRoutine(void)
 {
     static uint32_t last_time = 0;
 
-    if (((parameters.gnss_altitude < 100) && (parameters.imu_vel_y > -2 && parameters.imu_vel_y < 2)) || parameters.gnss_altitude < 5) //Si está descendiendo lo suficientemente lento como para decir que aterrizó
+    if (((parameters.gnss_altitude < 100) && (parameters.imu_vel_y > -2 && parameters.imu_vel_y < 2)) || parameters.gnss_altitude < 5) // Si está descendiendo lo suficientemente lento como para decir que aterrizó
     {
         parameters.status = RECOVERY;
         global_vars.last_status = RECOVERY;
-        saveGlobalData(global_vars);                //Guardado de parámetros globales en flash
+        saveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
-	if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
-	{
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
+    {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-		
-		readData();     // :+1:
-        global_vars.cant_pages = saveData(parameters);     //Guardado de datos actuales en flash
-	}
+
+        readData();                                    // :+1:
+        global_vars.cant_pages = saveData(parameters); // Guardado de datos actuales en flash
+    }
     telemetry();
 }
 
@@ -624,10 +640,10 @@ void recoverySignal(void)
 {
     static uint32_t last_time = 0;
 
-	if (to_ms_since_boot(get_absolute_time()) - last_time > 3000)
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 3000)
     {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-        
+
         telemetry();
     }
 }
@@ -644,8 +660,8 @@ void standByMode(void)
 /**
  * @brief   PIN_AIRBRAKE = 1 : airbrake closed
  *          PIN_AIRBRAKE = 0 : airbrake open
- * 
- * @param payload 
+ *
+ * @param payload
  */
 void airbrake_payload(bool payload)
 {
@@ -654,20 +670,16 @@ void airbrake_payload(bool payload)
     static int16_t poly_curve_3 = 0;
 
     pin_state = gpio_get(PIN_AIRBRAKE);
-    poly_curve_1 = (int16_t)(-1.209e-7 * (float)pow(parameters.imu_vel_y, 4) + 1.479e-4 * pow(parameters.imu_vel_y,3) - 5.82e-2
-* pow(parameters.imu_vel_y,2) + 3053);
-    poly_curve_3 = (int16_t)(1.088e-7 * (float)pow(parameters.imu_vel_y, 4) + 3.179e-5 * pow(parameters.imu_vel_y,3) - 5.009e-2
-* pow(parameters.imu_vel_y,2) + 3047);
-
+    poly_curve_1 = (int16_t)(-1.209e-7 * (float)pow(parameters.imu_vel_y, 4) + 1.479e-4 * pow(parameters.imu_vel_y, 3) - 5.82e-2 * pow(parameters.imu_vel_y, 2) + 3053);
+    poly_curve_3 = (int16_t)(1.088e-7 * (float)pow(parameters.imu_vel_y, 4) + 3.179e-5 * pow(parameters.imu_vel_y, 3) - 5.009e-2 * pow(parameters.imu_vel_y, 2) + 3047);
 
     if (payload)
         gpio_put(PIN_AIRBRAKE, 1);
     else
     {
         if ((parameters.gnss_altitude > poly_curve_3) && pin_state)
-            gpio_put(PIN_AIRBRAKE, 0);  // Open airprake 
+            gpio_put(PIN_AIRBRAKE, 0); // Open airprake
         else if ((parameters.gnss_altitude < poly_curve_1) && !pin_state)
-            gpio_put(PIN_AIRBRAKE, 1);  // Close airbrake
+            gpio_put(PIN_AIRBRAKE, 1); // Close airbrake
     }
-
 }
