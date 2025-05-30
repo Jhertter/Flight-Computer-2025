@@ -5,14 +5,18 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "hardware/uart.h"
+#include "hardware/gpio.h"
 
 #define DEBUG 0
+
+#define PIN_UART_TX 24
+#define PIN_UART_RX 25
 
 #define SIZE_PARAM (6) // 6 bytes for each parameter
 #define CANT_PARAM (14) // 12 parameters
 #define PKT_SIZE (CANT_PARAM * SIZE_PARAM) 
 #define PKT_TERMINATOR ('\n') // '\n' terminator
-#define START_BYTE (0xDE)
+#define START_BYTE (0xED)
 
 
 typedef struct {

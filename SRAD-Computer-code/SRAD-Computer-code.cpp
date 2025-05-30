@@ -29,9 +29,9 @@ int main()
     gpio_set_function(PIN_UART_RX, GPIO_FUNC_UART);
 
     // Initialize ADC for battery voltage measurement
-    // adc_init();
-    // adc_gpio_init(PIN_ADC_BATTERY); // ADC0
-    // adc_select_input(PIN_ADC_BATTERY); // Select ADC0 (GPIO26) for battery voltage measurement
+    adc_init();
+    adc_gpio_init(PIN_ADC_BATTERY); // ADC0
+    adc_select_input(PIN_ADC_BATTERY); // Select ADC0 (GPIO26) for battery voltage measurement
 
     // Set global variables as they were on last boot (just in case SRAD resets middle flight)
     // flashReadGlobalData();
@@ -83,15 +83,17 @@ int main()
         GNSS.setHNRNavigationRate(15);
         sleep_ms(200);
 
-        gpio_put(PIN_LED_ALTITUDE, 1);
+        gpio_put(PIN_LED_ERROR, 1);
 
-        // if(parameters.status == PRE_LAUNCH)
-        // {
-        //     do {
-        //         parameters.satellite_count = GNSS.getSIV();
-        //         printf("Waiting for GNSS satellites: %d\n", parameters.satellite_count);
-        //     } while (parameters.satellite_count < 1);
-        // }
+#if NDEBUG_SAT
+        if(parameters.status == PRE_LAUNCH)
+        {
+            do {
+                parameters.satellite_count = GNSS.getSIV();
+                printf("Waiting for GNSS satellites: %d\n", parameters.satellite_count);
+            } while (parameters.satellite_count < 1);
+        }
+#endif
     }
     init_leds();
 
@@ -156,8 +158,7 @@ void updateXbeeParameters(uint32_t last_time)
     xbee.setMissionTime(last_time);
     xbee.setPacketCount();
     xbee.setStatus(parameters.status);
-    // parameters.battery_level = (uint8_t)(adc_read() * 8.4f / 4096.0f * 100); // Convert ADC value to percentage
-    parameters.battery_level = (uint32_t)(735);
+    parameters.battery_level = (uint8_t)(adc_read() * 9.336f / 4096.0f * 100); // Convert ADC value to percentage
     xbee.setBatteryVoltage(parameters.battery_level);
     
     // IMU data
@@ -266,6 +267,7 @@ void readGNSS()
     //         first_time = false;
     // }
 
+#if NDEBUG_SAT
     if (parameters.satellite_count > 0)
     {
         parameters.gnss_time = (uint32_t)(GNSS.getHour() * 10000 + GNSS.getMinute() * 100 + GNSS.getSecond());
@@ -274,6 +276,14 @@ void readGNSS()
         parameters.gnss_altitude = (GNSS.getAltitude() - altitude_bias) / 1000;
         parameters.gnss_altitude = GNSS.getAltitudeMSL();
     }
+#else
+    // dummy parameters for testing
+    parameters.satellite_count = 10; // GNSS.getSIV();
+    parameters.gnss_time = 123456; // GNSS.getHour() * 10000 + GNSS.getMinute() * 100 + GNSS.getSecond();
+    parameters.gnss_latitude = 0;   // GNSS.getLatitude();   // latitude +-90ª
+    parameters.gnss_longitude = 0; // GNSS.getLongitude(); // longitude +-180ª
+    parameters.gnss_altitude = 0; // (GNSS.getAltitude() - altitude_bias) / 1000;
+#endif
 }
 
 // Returns the current pressure. Handy to have for calibration processes
@@ -440,8 +450,11 @@ void waitForStart(void)
     // si nunca llega START y empieza a acelerar el weon, pasamos a estado LAUNCH
     static uint32_t last_time = 0;
 
-    if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
+    // if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
+    if (xbee.receiveStartSignal())
     {
+        gpio_put(PIN_LED_ON, 1);
+        printf("START signal received.\n");
         calibrateRocket();
         parameters.status = LAUNCH;
         global_vars.last_status = parameters.status;
@@ -452,7 +465,7 @@ void waitForStart(void)
     if (to_ms_since_boot(get_absolute_time()) - last_time > 100) // para leer aceleración vertical, por si no llega el START
     {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-
+        gpio_toggle(PIN_LED_ON);
         readData();
     }
 }

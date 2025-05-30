@@ -4,6 +4,9 @@ XBee::XBee(xbee_uart_cfg_t cfg, uint32_t time)
 {
     uart_cfg = cfg;
     // Initialize UART
+    gpio_set_function(PIN_UART_TX, GPIO_FUNC_UART);
+    gpio_set_function(PIN_UART_RX, GPIO_FUNC_UART);
+
     uart_init(uart_cfg.uart_id, uart_cfg.baud_rate);
     uart_set_hw_flow(uart_cfg.uart_id, false, false);
     uart_set_format(uart_cfg.uart_id, uart_cfg.data_bits, uart_cfg.stop_bit, uart_cfg.parity);
@@ -214,17 +217,21 @@ void XBee::clearPkt(packet_index_t packet)
 
 bool XBee::receiveStartSignal()
 {
-    if (uart_is_readable(uart_cfg.uart_id))
-    {
-        if(uart_getc(uart_cfg.uart_id) == START_BYTE)
+    static char c = '0';
+    // printf("Waiting for start signal...\n");
+    // if (uart_is_readable(uart_cfg.uart_id))
+    // if (uart_is_readable_within_us(uart_cfg.uart_id, 1000)) // Wait for 1ms for a character
+    // {
+        c = uart_getc(uart_cfg.uart_id);
+        printf("Received: %c\n", c);
+        if(c == START_BYTE)
         {
             uart_puts(uart_cfg.uart_id, "ACK\n");
             return true;
         }
-        
         return false;
-    }
-    else
-        return false;
+    // }
+    // else
+    //     return false;
 }
 

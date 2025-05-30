@@ -16,6 +16,7 @@
 #include "libraries/bmp_280/bmp280.h"
 #include "libraries/XBee/XBee.h"
 
+#define NDEBUG_SAT  0
 #define PRINT_DEBUG_PKT 1
 
 #define I2C_FREQUENCY 400000
@@ -26,9 +27,6 @@
 
 #define PIN_I2C_SDA 16
 #define PIN_I2C_SCL 17
-
-#define PIN_UART_TX 24
-#define PIN_UART_RX 25
 
 #define PIN_AIRBRAKE 29
 
