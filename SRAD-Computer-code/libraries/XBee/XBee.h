@@ -51,8 +51,8 @@ typedef enum {
 typedef enum {
     MISSION_TIME = 0,
     PACKET_COUNT,
-    BATTERY_LEVEL,
     MISSION_STATUS,
+    BATTERY_LEVEL,
     
     IMU_Y_VEL,
     IMU_ROLL,
@@ -113,7 +113,7 @@ class XBee
         // uint16_t status = LAUNCH;
         // uint16_t battery_level = 459;
         uint32_t packet_count = 0;
-        uint32_t status = LAUNCH;
+        uint32_t status = PRE_LAUNCH;
         uint32_t battery_level = 459;
         
         int32_t imu_y_vel = 0;
@@ -133,8 +133,8 @@ class XBee
         void* data_arr[CANT_PARAM] = {
             &mission_time,
             &packet_count,
-            &battery_level,
             &status,
+            &battery_level,
             
             &imu_y_vel,
             &imu_roll,

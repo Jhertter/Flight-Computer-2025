@@ -450,8 +450,8 @@ void waitForStart(void)
     // si nunca llega START y empieza a acelerar el weon, pasamos a estado LAUNCH
     static uint32_t last_time = 0;
 
-    // if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
-    if (xbee.receiveStartSignal())
+    if (xbee.receiveStartSignal() || parameters.imu_accel_y > 0)
+    // if (xbee.receiveStartSignal())
     {
         gpio_put(PIN_LED_ON, 1);
         printf("START signal received.\n");
@@ -496,20 +496,27 @@ void calibrateRocket(void)
  */
 void waitForLaunch(void)
 {
-    static uint32_t last_time = 0;
+    static uint32_t last_time = 0, tel_time =0;
     // se queda en este estado hasta que la accel_y > 0
     // Podria trasmitir telemetria tambien, TBD
     // si accel > 0:
     // 	event_action = MOVE;
     // 	parameters.status = ASCENT;
     //  save_falsh = true;
+    if (parameters.imu_accel_y > 0)
+    {
+        parameters.status = ASCENT;
+        global_vars.last_status = ASCENT;
+        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        return;
+    }
 
     if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
     {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
         readData();
-
+        
         if (parameters.imu_accel_y > 0)
         {
             parameters.status = ASCENT;
@@ -517,7 +524,12 @@ void waitForLaunch(void)
             flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         }
     }
-
+    if (to_ms_since_boot(get_absolute_time()) - tel_time > 1000)
+    {
+        tel_time = to_ms_since_boot(get_absolute_time()); // Update the timer
+        telemetry();
+    }
+    
     return;
 }
 
