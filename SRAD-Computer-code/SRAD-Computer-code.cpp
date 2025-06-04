@@ -8,6 +8,8 @@ packet parameters = {PRE_LAUNCH, 0};
 
 int main()
 {
+
+    parameters.status = PRE_LAUNCH;
     stdio_init_all();
     init_leds();
 
@@ -274,7 +276,7 @@ void readGNSS()
         parameters.gnss_latitude = GNSS.getLatitude();   // latitude +-90ª
         parameters.gnss_longitude = GNSS.getLongitude(); // longitude +-180ª
         parameters.gnss_altitude = (GNSS.getAltitude() - altitude_bias) / 1000;
-        parameters.gnss_altitude = GNSS.getAltitudeMSL();
+        // parameters.gnss_altitude = GNSS.getAltitudeMSL();
     }
 #else
     // dummy parameters for testing
@@ -519,6 +521,7 @@ void waitForLaunch(void)
         
         if (parameters.imu_accel_y > 0)
         {
+            gpio_put(PIN_LED_ON, 1);
             parameters.status = ASCENT;
             global_vars.last_status = ASCENT;
             flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
@@ -526,6 +529,7 @@ void waitForLaunch(void)
     }
     if (to_ms_since_boot(get_absolute_time()) - tel_time > 1000)
     {
+        gpio_toggle(PIN_LED_ON);
         tel_time = to_ms_since_boot(get_absolute_time()); // Update the timer
         telemetry();
     }

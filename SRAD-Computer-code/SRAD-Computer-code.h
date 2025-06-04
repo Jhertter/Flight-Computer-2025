@@ -17,7 +17,7 @@
 #include "libraries/XBee/XBee.h"
 
 #define NDEBUG_SAT  1
-#define PRINT_DEBUG_PKT 1
+#define PRINT_DEBUG_PKT 0
 
 #define I2C_FREQUENCY 400000
 

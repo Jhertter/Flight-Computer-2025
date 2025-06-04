@@ -8,7 +8,7 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 WHITE = "\033[0m"
 
-PORT_PATH = '/dev/ttyACM2'
+PORT_PATH = '/dev/ttyUSB0'
 
 uart = 0
 
@@ -21,8 +21,8 @@ state = 'DISCONNECTED'
 while (True):
     if (state == 'CONNECTED'):
         try:
-            velocity = float(((uart.readline().decode('utf-8').strip()).split(',')[0]).split(':')[-1])
-            vel_km_h = round(velocity * 3.6, 2)
+            # velocity = float(((uart.readline().decode('utf-8').strip()).split(',')[0]).split(':')[-1])
+            # vel_km_h = round(velocity * 3.6, 2)
 
             line = uart.readline().decode('utf-8').strip()
             if line:
