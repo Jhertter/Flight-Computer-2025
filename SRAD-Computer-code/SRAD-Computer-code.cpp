@@ -196,15 +196,6 @@ void readData()
         times = 0;
 }
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-#define RAD_TO_DEG (180.0f / 3.14159265358979323846f)
-#define DEG_TO_RAD (1 / RAD_TO_DEG)
-#define GRAVITY (9.80665f)
-#define IMU_SAMPLING_RATE (200.0f)                     // Hz
-#define IMU_SAMPLING_PERIOD (1.0f / IMU_SAMPLING_RATE) // seconds
-#define STATIC_ACCELEROMETER_THRESHOLD (0.12f)         // m/s^2
-#define STATIC_GYROSCOPE_THRESHOLD (3.0f)              // m/s
-
 void readIMU()
 {
     static float accel_g[3] = {0};
@@ -226,7 +217,7 @@ void readIMU()
     parameters.imu_accel_y = (accel_g[1] * (-GRAVITY));                                                                   // m/s^2
     parameters.imu_accel_y = (ABS(parameters.imu_accel_y) < STATIC_ACCELEROMETER_THRESHOLD) ? 0 : parameters.imu_accel_y; // m/s^2
 
-    calculateVelocity(accel_g[1], gyro_dps[1]);
+    calculateIMUvelocity(accel_g[1], gyro_dps[1]);
 }
 
 /**
@@ -235,7 +226,7 @@ void readIMU()
  * @param accel_g_y
  * @param gyro_dps_y
  */
-void calculateVelocity(float accel_g_y, float gyro_dps_y)
+void calculateIMUvelocity(float accel_g_y, float gyro_dps_y)
 {
     static float prev_accel_y = 0; // in graviy units
     static float delta_vel_y = 0;  // in m/s
@@ -269,14 +260,23 @@ void readGNSS()
     //         first_time = false;
     // }
 
+    // This is fot the velocity calculation, just for comparison with the IMU velocity
+    static int32_t last_altitude = 0;
+    static uint32_t period = to_ms_since_boot(get_absolute_time())/1000; 
+
 #if NDEBUG_SAT
     if (parameters.satellite_count > 0)
     {
+        period = to_ms_since_boot(get_absolute_time()) / 1000 - period; // seconds
+        last_altitude = parameters.gnss_altitude;
+
         parameters.gnss_time = (uint32_t)(GNSS.getHour() * 10000 + GNSS.getMinute() * 100 + GNSS.getSecond());
         parameters.gnss_latitude = GNSS.getLatitude();   // latitude +-90ª
         parameters.gnss_longitude = GNSS.getLongitude(); // longitude +-180ª
         parameters.gnss_altitude = (GNSS.getAltitude() - altitude_bias) / 1000;
         // parameters.gnss_altitude = GNSS.getAltitudeMSL();
+    
+        parameters.gnss_velocity = (parameters.gnss_altitude - last_altitude) / period; // m/s
     }
 #else
     // dummy parameters for testing
@@ -464,11 +464,12 @@ void waitForStart(void)
         return;
     }
 
-    if (to_ms_since_boot(get_absolute_time()) - last_time > 100) // para leer aceleración vertical, por si no llega el START
+    if (to_ms_since_boot(get_absolute_time()) - last_time > 1000) // para leer aceleración vertical, por si no llega el START
     {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
         gpio_toggle(PIN_LED_ON);
         readData();
+        telemetry();
     }
 }
 
@@ -527,7 +528,7 @@ void waitForLaunch(void)
             flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         }
     }
-    if (to_ms_since_boot(get_absolute_time()) - tel_time > 1000)
+    if (to_ms_since_boot(get_absolute_time()) - tel_time > 250)
     {
         gpio_toggle(PIN_LED_ON);
         tel_time = to_ms_since_boot(get_absolute_time()); // Update the timer
@@ -541,12 +542,12 @@ void ascentRoutine(void)
 {
     static uint32_t last_time = 0;
 
-    if (parameters.gnss_altitude > 2000)
+    if (parameters.gnss_altitude > AIRBRAKE_HEIGHT)
     {
         parameters.status = APOGEE;
         global_vars.last_status = APOGEE;
         flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
-
+        gpio_put(PIN_AIRBRAKE, 0); // Open airbrake
         return;
     }
 
@@ -622,17 +623,16 @@ void telemetry(void)
 void apogeeRoutine(void)
 {
     static uint32_t last_time = 0;
-    // empiezan los cálculos del airbrake
-    // busca altura máxima
-    // cuando accel = 0, almacena la altura máxima --> LAMENTABLEMENTE FALSO
-    // event_action = MOVE;
-    // parameters.status = DESCENT;
+    static int32_t altitude_memory[5] = {0};
+    static bool descent_flag = false;
 
-    if (parameters.imu_vel_y < 0) // hasta que no funcione del todo bien la velocidad, calcular altura
+    // if (parameters.imu_vel_y < 0) // hasta que no funcione del todo bien la velocidad, calcular altura
+    if (descent_flag)
     {
+        gpio_put(PIN_AIRBRAKE, 1); // Close airbrake
         parameters.status = DESCENT;
         global_vars.last_status = DESCENT;
-        global_vars.max_altitude = parameters.gnss_altitude;
+        global_vars.max_altitude = altitude_memory[0]; 
         flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
@@ -643,8 +643,23 @@ void apogeeRoutine(void)
 
         readData();
         global_vars.cant_pages = flashSaveData(parameters); // Guardado de datos actuales en flash
+        // airbrake_payload();
+ 
+        for (int i = 0; i < 4; i++)
+        {
+            altitude_memory[i] = altitude_memory[i + 1]; // Shift the array
+        }
+        altitude_memory[4] = parameters.gnss_altitude; // Add the current altitude
 
-        airbrake_payload();
+        for (int i = 1; i < 5; i++)
+        {
+            if (altitude_memory[i] > altitude_memory[0])
+                break;
+
+            if (i == 4) // Apogee was reached, we are descending
+                descent_flag = true;
+        }
+
     }
     telemetry();
 }
