@@ -511,6 +511,7 @@ void waitForLaunch(void)
         parameters.status = ASCENT;
         global_vars.last_status = ASCENT;
         flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        gpio_put(PIN_LED_ON, 1);
         return;
     }
 
@@ -519,14 +520,13 @@ void waitForLaunch(void)
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
         readData();
-        
-        if (parameters.imu_accel_y > 0)
-        {
-            gpio_put(PIN_LED_ON, 1);
-            parameters.status = ASCENT;
-            global_vars.last_status = ASCENT;
-            flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
-        }
+        // if (parameters.imu_accel_y > 0)
+        // {
+        //     gpio_put(PIN_LED_ON, 1);
+        //     parameters.status = ASCENT;
+        //     global_vars.last_status = ASCENT;
+        //     flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        // }
     }
     if (to_ms_since_boot(get_absolute_time()) - tel_time > 250)
     {
