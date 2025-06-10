@@ -145,6 +145,9 @@ void XBee::sendPkt()
     for (int i=0; i<=PKT_SIZE; i++)
         uart_putc(uart_cfg.uart_id , pkt[i]);
 
+    // @twickham: Test if error is on line below
+    uart_tx_wait_blocking(uart_cfg.uart_id);
+
 #if DEBUG
     for(int i=0; i<=PKT_SIZE; i++)
         printf("%c", pkt[i]);
