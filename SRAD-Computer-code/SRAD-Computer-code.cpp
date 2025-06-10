@@ -456,7 +456,7 @@ void waitForStart(void)
     // if (xbee.receiveStartSignal())
     {
         gpio_put(PIN_LED_ON, 1);
-        printf("START signal received.\n");
+        // printf("START signal received.\n");
         calibrateRocket();
         parameters.status = LAUNCH;
         global_vars.last_status = parameters.status;
@@ -500,12 +500,8 @@ void calibrateRocket(void)
 void waitForLaunch(void)
 {
     static uint32_t last_time = 0, tel_time =0;
-    // se queda en este estado hasta que la accel_y > 0
-    // Podria trasmitir telemetria tambien, TBD
-    // si accel > 0:
-    // 	event_action = MOVE;
-    // 	parameters.status = ASCENT;
-    //  save_falsh = true;
+
+    // Change mission status
     if (parameters.imu_accel_y > 0)
     {
         parameters.status = ASCENT;
@@ -514,25 +510,24 @@ void waitForLaunch(void)
         gpio_put(PIN_LED_ON, 1);
         return;
     }
+    
+    // Telemetry
+    if (to_ms_since_boot(get_absolute_time()) - tel_time > 250)
+    {
+        gpio_toggle(PIN_LED_ON);
 
+        // @twickham: Test if error is on line below
+        tel_time = to_ms_since_boot(get_absolute_time()); // Update the timer
+        telemetry();
+    }
+
+    // Save Data
     if (to_ms_since_boot(get_absolute_time()) - last_time > 5)
     {
         last_time = to_ms_since_boot(get_absolute_time()); // Update the timer
 
         readData();
-        // if (parameters.imu_accel_y > 0)
-        // {
-        //     gpio_put(PIN_LED_ON, 1);
-        //     parameters.status = ASCENT;
-        //     global_vars.last_status = ASCENT;
-        //     flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
-        // }
-    }
-    if (to_ms_since_boot(get_absolute_time()) - tel_time > 250)
-    {
-        gpio_toggle(PIN_LED_ON);
-        tel_time = to_ms_since_boot(get_absolute_time()); // Update the timer
-        telemetry();
+        global_vars.cant_pages = flashSaveData(parameters);
     }
     
     return;
