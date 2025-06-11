@@ -129,6 +129,7 @@ void init_leds();
 void error_led(void);
 
 packet buffer_flash[BUFFER_SIZE];
+flash_global_vars_t buffer_global [((uint8_t)(FLASH_PAGE_SIZE / sizeof(flash_global_vars_t)))];
 uint32_t flashSaveData(packet data);
 void flashRead(uint32_t n_pages);
 void flashSaveGlobalData(flash_global_vars_t data);

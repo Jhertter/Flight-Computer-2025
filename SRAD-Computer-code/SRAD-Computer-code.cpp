@@ -350,7 +350,7 @@ uint32_t flashSaveData(packet data)
         //(escrituras), por lo que cada 16 iteraciones borramos el siguiente sector
         if (saves % 16 == 0)
         {
-            uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * ((saves / 16) + 2)); //+2 para reservar el último para las variables globales
+            uint32_t erase_addr = (FLASH_SIZE) - (uint32_t)(FLASH_SECTOR_SIZE * ((uint32_t)(saves / 16) + 2)); //+2 para reservar el último para las variables globales
             if (erase_addr <= FLASH_CODE_END)                                                        // No borrar el sector de código
             {
                 out_of_memory = true;
@@ -362,17 +362,6 @@ uint32_t flashSaveData(packet data)
             restore_interrupts(ints);
         }
         // Después de borrar (si fue necesario), guardamos el buffer en memoria
-        uint32_t prog_addr = (FLASH_SIZE)-(FLASH_SECTOR_SIZE*2) - (FLASH_PAGE_SIZE * saves); // notar que el ultimo sector es para las variables globales
-
-        uint32_t ints = save_and_disable_interrupts();
-        flash_range_program(prog_addr, (uint8_t *)(buffer_flash), FLASH_PAGE_SIZE);
-        restore_interrupts(ints);
-
-        saves++;
-        buff_count = 0;
-    }
-    else if (global_vars.last_status == RECOVERY)
-    {
         uint32_t prog_addr = (FLASH_SIZE)-(FLASH_SECTOR_SIZE) - (FLASH_PAGE_SIZE * (saves+1)); // notar que el ultimo sector es para las variables globales
 
         uint32_t ints = save_and_disable_interrupts();
@@ -380,6 +369,7 @@ uint32_t flashSaveData(packet data)
         restore_interrupts(ints);
 
         saves++;
+        buff_count = 0;
     }
     return saves;
 }
@@ -405,14 +395,15 @@ void flashRead(uint32_t n_pages)
 
 void flashSaveGlobalData(flash_global_vars_t data)
 {
-    static const uint32_t erase_addr = (FLASH_SIZE) - (FLASH_SECTOR_SIZE);
-    static const uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * 2); // No guardamos en la última página para dejar lugar a futuras implementaciones y tests
+    buffer_global[0] = global_vars;
+    uint32_t erase_addr = (FLASH_SIZE) - (FLASH_SECTOR_SIZE);
+    uint32_t prog_addr = (FLASH_SIZE) - (FLASH_PAGE_SIZE * 2); // No guardamos en la última página para dejar lugar a futuras implementaciones y tests
     uint32_t ints = save_and_disable_interrupts();
     flash_range_erase(erase_addr, FLASH_SECTOR_SIZE);
     restore_interrupts(ints);
 
     ints = save_and_disable_interrupts();
-    flash_range_program(prog_addr, (uint8_t *)&global_vars, sizeof(flash_global_vars_t));
+    flash_range_program(prog_addr, (uint8_t *)&buffer_global, FLASH_PAGE_SIZE);
     restore_interrupts(ints);
 }
 
@@ -460,7 +451,7 @@ void waitForStart(void)
         calibrateRocket();
         parameters.status = LAUNCH;
         global_vars.last_status = parameters.status;
-        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        // flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
@@ -506,7 +497,7 @@ void waitForLaunch(void)
     {
         parameters.status = ASCENT;
         global_vars.last_status = ASCENT;
-        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        // flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         gpio_put(PIN_LED_ON, 1);
         return;
     }
@@ -541,7 +532,7 @@ void ascentRoutine(void)
     {
         parameters.status = APOGEE;
         global_vars.last_status = APOGEE;
-        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        // flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         gpio_put(PIN_AIRBRAKE, 0); // Open airbrake
         return;
     }
@@ -628,7 +619,7 @@ void apogeeRoutine(void)
         parameters.status = DESCENT;
         global_vars.last_status = DESCENT;
         global_vars.max_altitude = altitude_memory[0]; 
-        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        // flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
@@ -667,7 +658,7 @@ void descentRoutine(void)
     {
         parameters.status = RECOVERY;
         global_vars.last_status = RECOVERY;
-        flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
+        // flashSaveGlobalData(global_vars); // Guardado de parámetros globales en flash
         return;
     }
 
